@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Puzzle Solver - Mô phỏng thuật toán</title>
+    <style>
+        :root {
+            --primary-color: #4361ee;
+            --secondary-color: #3f37c9;
+            --accent-color: #f72585;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            margin-right: 10px;
+            font-size: 2.2rem;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin-left: 2rem;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        nav ul li a:hover {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        main {
+            flex: 1;
+            padding: 3rem 0;
+        }
+
+        .hero {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 4rem;
+        }
+
+        .hero-content {
+            flex: 1;
+            padding-right: 2rem;
+        }
+
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .hero p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            color: #495057;
+            line-height: 1.6;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.8rem 1.5rem;
+            background-color: var(--accent-color);
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .hero-image {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        .puzzle-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            perspective: 1000px;
+        }
+
+        .puzzle-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 8px;
+            width: 100%;
+            height: 100%;
+            transform-style: preserve-3d;
+            animation: float 5s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0) rotate3d(1, 1, 1, 0deg);
+            }
+
+            50% {
+                transform: translateY(-20px) rotate3d(1, 1, 1, 5deg);
+            }
+
+            100% {
+                transform: translateY(0) rotate3d(1, 1, 1, 0deg);
+            }
+        }
+
+        .puzzle-tile {
+            background: var(--primary-color);
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            color: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .puzzle-tile:hover {
+            transform: scale(1.05);
+        }
+
+        .empty {
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .features {
+            margin-bottom: 4rem;
+        }
+
+        .section-title {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-size: 2rem;
+            color: var(--dark-color);
+        }
+
+        .feature-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background-color: white;
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .feature-icon {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .algorithm-section {
+            margin-bottom: 4rem;
+        }
+
+        .algorithm-tabs {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 2rem;
+        }
+
+        .tab-btn {
+            padding: 0.8rem 1.5rem;
+            background-color: white;
+            border: none;
+            border-radius: 5px;
+            margin: 0 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .tab-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        .algorithm-info {
+            flex: 1;
+            padding-right: 2rem;
+        }
+
+        .algorithm-info h3 {
+            margin-bottom: 1rem;
+            color: var(--dark-color);
+        }
+
+        .algorithm-info p {
+            margin-bottom: 1rem;
+            color: #495057;
+            line-height: 1.6;
+        }
+
+        .algorithm-visual {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .visual-container {
+            width: 100%;
+            max-width: 400px;
+            height: 250px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .call-to-action {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .cta-container {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            padding: 3rem;
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            color: white;
+        }
+
+        .cta-container h2 {
+            margin-bottom: 1rem;
+            font-size: 2rem;
+        }
+
+        .cta-container p {
+            margin-bottom: 2rem;
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-light {
+            background-color: white;
+            color: var(--primary-color);
+        }
+
+        footer {
+            background-color: var(--dark-color);
+            color: white;
+            padding: 2rem 0;
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copyright {
+            font-size: 0.9rem;
+        }
+
+        .social-links a {
+            color: white;
+            margin-left: 1rem;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            color: var(--accent-color);
+        }
+
+        @media (max-width: 768px) {
+
+            .hero,
+            .tab-content {
+                flex-direction: column;
+            }
+
+            .hero-content,
+            .algorithm-info {
+                padding-right: 0;
+                margin-bottom: 2rem;
+            }
+
+            .feature-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .header-content {
+                flex-direction: column;
+            }
+
+            nav ul {
+                margin-top: 1rem;
+            }
+
+            nav ul li {
+                margin-left: 1rem;
+                margin-right: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">🧩</span>
+                    <span>8-Puzzle Solver</span>
+                </div>
+                <nav>
+                    <ul>
+                        <li><a href="#home">Trang chủ</a></li>
+                        <li><a href="#features">Tính năng</a></li>
+                        <li><a href="#algorithms">Thuật toán</a></li>
+                        <li><a href="#about">Giới thiệu</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="home" class="hero container">
+            <div class="hero-content">
+                <h1>Mô phỏng và Giải quyết Bài toán 8-Puzzle</h1>
+                <p>Khám phá các thuật toán tìm kiếm phổ biến như BFS (Breadth-First Search) và DFS (Depth-First Search)
+                    thông qua mô phỏng trực quan của bài toán 8-puzzle nổi tiếng. Hiểu sâu về cách các thuật toán hoạt
+                    động và so sánh hiệu suất của chúng.</p>
+                <a href="#simulator" class="btn">Bắt đầu ngay</a>
+            </div>
+            <div class="hero-image">
+                <div class="puzzle-container">
+                    <div class="puzzle-grid">
+                        <div class="puzzle-tile">1</div>
+                        <div class="puzzle-tile">2</div>
+                        <div class="puzzle-tile">3</div>
+                        <div class="puzzle-tile">4</div>
+                        <div class="puzzle-tile">5</div>
+                        <div class="puzzle-tile">6</div>
+                        <div class="puzzle-tile">7</div>
+                        <div class="puzzle-tile">8</div>
+                        <div class="puzzle-tile empty"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="features" class="features container">
+            <h2 class="section-title">Tính năng chính</h2>
+            <div class="feature-cards">
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Mô phỏng trực quan</h3>
+                    <p>Xem từng bước giải quyết của thuật toán thông qua giao diện trực quan, giúp bạn hiểu rõ cách
+                        thuật toán hoạt động.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚙️</div>
+                    <h3>Nhiều thuật toán</h3>
+                    <p>So sánh các thuật toán tìm kiếm khác nhau như BFS, DFS và hơn thế nữa để tìm hiểu về ưu nhược
+                        điểm của từng phương pháp.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Phân tích hiệu suất</h3>
+                    <p>Xem các thống kê chi tiết về thời gian thực thi, số trạng thái đã duyệt và độ sâu của giải pháp.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <section id="algorithms" class="algorithm-section container">
+            <h2 class="section-title">Thuật toán tìm kiếm</h2>
+            <div class="algorithm-tabs">
+                <button class="tab-btn active" data-tab="uninformed">Tìm kiếm không có thông tin</button>
+                <button class="tab-btn" data-tab="informed">Tìm kiếm có thông tin</button>
+                <button class="tab-btn" data-tab="local">Tìm kiếm cục bộ</button>
+                <button class="tab-btn" data-tab="advanced">Tìm kiếm nâng cao</button>
+            </div>
+            <div class="tab-content">
+                <div class="algorithm-info">
+                    <h3>Tìm kiếm không có thông tin (Uninformed Search)</h3>
+                    <p>Các thuật toán tìm kiếm không sử dụng thông tin heuristic để hướng dẫn quá trình tìm kiếm, chỉ
+                        dựa vào cấu trúc của không gian trạng thái.</p>
+                    <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
+                        <a href="/bfs" style="text-decoration: none; color: inherit;">
+                            <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                <strong>BFS (Breadth-First Search)</strong> - Tìm kiếm theo chiều rộng, đảm bảo tìm được đường đi ngắn nhất
+                            </li>
+
+                        </a>
+                        <a href="/dfs" style="text-decoration: none; color: inherit;">
+                            <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                <strong>DFS (Depth-First Search)</strong> - Tìm kiếm theo chiều sâu, tiết kiệm bộ nhớ
+                            </li>
+                        </a>
+                        <a href="/ucs" style="text-decoration: none; color: inherit;">
+                            <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                <strong>UCS (Uniform-Cost Search)</strong> - Tìm kiếm theo chi phí đồng nhất
+                            </li>
+                        </a >
+                        <a href="/iddfs" style="text-decoration: none; color: inherit;">
+                            <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                <strong>IDDFS (Iterative Deepening DFS)</strong> - Kết hợp ưu điểm của BFS và DFS
+                            </li>
+                        </a>
+                        
+                    </ul>
+                </div>
+                <div class="algorithm-visual">
+                    <div class="visual-container">
+                        <svg width="380" height="220" viewBox="0 0 380 220">
+                            <rect x="150" y="10" width="60" height="60" rx="5" fill="#4361ee" />
+                            <text x="180" y="45" text-anchor="middle" fill="white" font-weight="bold">Start</text>
+
+                            <rect x="70" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                            <text x="100" y="135" text-anchor="middle" fill="white" font-weight="bold">Level 1</text>
+
+                            <rect x="150" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                            <text x="180" y="135" text-anchor="middle" fill="white" font-weight="bold">Level 1</text>
+
+                            <rect x="230" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                            <text x="260" y="135" text-anchor="middle" fill="white" font-weight="bold">Level 1</text>
+
+                            <line x1="180" y1="70" x2="100" y2="100" stroke="#adb5bd" stroke-width="2" />
+                            <line x1="180" y1="70" x2="180" y2="100" stroke="#adb5bd" stroke-width="2" />
+                            <line x1="180" y1="70" x2="260" y2="100" stroke="#adb5bd" stroke-width="2" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="simulator" class="call-to-action container">
+            <div class="cta-container">
+                <h2>Khám phá trình mô phỏng</h2>
+                <p>Thử giải bài toán 8-puzzle với các thuật toán khác nhau, xem mô phỏng trực quan và so sánh hiệu suất
+                    để hiểu sâu hơn về cách các thuật toán tìm kiếm hoạt động.</p>
+                <a href="#" class="btn btn-light">Chạy trình mô phỏng</a>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer-content">
+            <div class="copyright">
+                &copy; 2025 8-Puzzle Solver | Mô phỏng thuật toán
+            </div>
+            <div class="social-links">
+                <a href="#"><span>🔗</span></a>
+                <a href="#"><span>📚</span></a>
+                <a href="#"><span>💻</span></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tabBtns = document.querySelectorAll('.tab-btn');
+            const tabContent = document.querySelector('.tab-content');
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener('click', function () {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+
+                    const algorithm = this.dataset.tab;
+
+                    if (algorithm === 'uninformed') {
+                        tabContent.innerHTML = `
+                            <div class="algorithm-info">
+                                <h3>Tìm kiếm không có thông tin (Uninformed Search)</h3>
+                                <p>Các thuật toán tìm kiếm không sử dụng thông tin heuristic để hướng dẫn quá trình tìm kiếm, chỉ dựa vào cấu trúc của không gian trạng thái.</p>
+                                <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>BFS (Breadth-First Search)</strong> - Tìm kiếm theo chiều rộng, đảm bảo tìm được đường đi ngắn nhất
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>DFS (Depth-First Search)</strong> - Tìm kiếm theo chiều sâu, tiết kiệm bộ nhớ
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>UCS (Uniform-Cost Search)</strong> - Tìm kiếm theo chi phí đồng nhất
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;" onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';" onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>IDDFS (Iterative Deepening DFS)</strong> - Kết hợp ưu điểm của BFS và DFS
+                                    </li>
+                                </ul>
+                            </div>
+                            <div class="algorithm-visual">
+                                <div class="visual-container">
+                                    <svg width="380" height="220" viewBox="0 0 380 220">
+                                        <rect x="150" y="10" width="60" height="60" rx="5" fill="#4361ee" />
+                                        <text x="180" y="45" text-anchor="middle" fill="white" font-weight="bold">Start</text>
+                                        
+                                        <rect x="70" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="100" y="135" text-anchor="middle" fill="white" font-weight="bold">Level 1</text>
+                                        
+                                        <rect x="150" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="180" y="135" text-anchor="middle" fill="white" font-weight="bold">Level 1</text>
+                                        
+                                        <rect x="230" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="260" y="135" text-anchor="middle" fill="white" font-weight="bold">Level 1</text>
+                                        
+                                        <line x1="180" y1="70" x2="100" y2="100" stroke="#adb5bd" stroke-width="2" />
+                                        <line x1="180" y1="70" x2="180" y2="100" stroke="#adb5bd" stroke-width="2" />
+                                        <line x1="180" y1="70" x2="260" y2="100" stroke="#adb5bd" stroke-width="2" />
+                                    </svg>
+                                </div>
+                            </div>
+                        `;
+                    } else if (algorithm === 'informed') {
+                        tabContent.innerHTML = `
+                            <div class="algorithm-info">
+                                <h3>Tìm kiếm có thông tin (Informed Search)</h3>
+                                <p>Các thuật toán tìm kiếm sử dụng thông tin heuristic để đánh giá và chọn trạng thái tiếp theo, giúp tối ưu hóa quá trình tìm kiếm.</p>
+                                <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Greedy Best-First Search</strong> - Chọn trạng thái có heuristic tốt nhất
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>A* Search</strong> - Kết hợp chi phí đã đi và heuristic, tìm đường đi tối ưu
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>IDA* (Iterative Deepening A*)</strong> - Kết hợp IDDFS và A*
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Beam Search</strong> - Giới hạn số lượng trạng thái được xem xét ở mỗi cấp
+                                    </li>
+                                </ul>
+
+                            </div>
+                            <div class="algorithm-visual">
+                                <div class="visual-container">
+                                    <svg width="380" height="220" viewBox="0 0 380 220">
+                                        <rect x="150" y="10" width="60" height="60" rx="5" fill="#4361ee" />
+                                        <text x="180" y="45" text-anchor="middle" fill="white" font-weight="bold">Start</text>
+                                        <text x="180" y="25" text-anchor="middle" fill="white" font-size="10">h=8</text>
+                                        
+                                        <rect x="70" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="100" y="135" text-anchor="middle" fill="white" font-weight="bold">State</text>
+                                        <text x="100" y="115" text-anchor="middle" fill="white" font-size="10">h=7</text>
+                                        
+                                        <rect x="150" y="100" width="60" height="60" rx="5" fill="#f72585" />
+                                        <text x="180" y="135" text-anchor="middle" fill="white" font-weight="bold">State</text>
+                                        <text x="180" y="115" text-anchor="middle" fill="white" font-size="10">h=4</text>
+                                        
+                                        <rect x="230" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="260" y="135" text-anchor="middle" fill="white" font-weight="bold">State</text>
+                                        <text x="260" y="115" text-anchor="middle" fill="white" font-size="10">h=6</text>
+                                        
+                                        <line x1="180" y1="70" x2="100" y2="100" stroke="#adb5bd" stroke-width="2" />
+                                        <line x1="180" y1="70" x2="180" y2="100" stroke="#f72585" stroke-width="3" />
+                                        <line x1="180" y1="70" x2="260" y2="100" stroke="#adb5bd" stroke-width="2" />
+                                    </svg>
+                                </div>
+                            </div>
+                        `;
+                    } else if (algorithm === 'local') {
+                        tabContent.innerHTML = `
+                            <div class="algorithm-info">
+                                <h3>Tìm kiếm cục bộ (Local Search)</h3>
+                                <p>Các thuật toán tìm kiếm cục bộ không quan tâm đến quá trình, chỉ tập trung vào việc tìm trạng thái mục tiêu tốt nhất có thể.</p>
+                                <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Simple Hill Climbing</strong> - Di chuyển đến trạng thái lân cận tốt hơn đầu tiên
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Steepest Hill Climbing</strong> - Di chuyển đến trạng thái lân cận tốt nhất
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Stochastic Hill Climbing</strong> - Chọn ngẫu nhiên trong số các trạng thái cải thiện
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Simulated Annealing</strong> - Cho phép di chuyển đến trạng thái tệ hơn để tránh cực tiểu cục bộ
+                                    </li>
+                                </ul>
+
+                            </div>
+                            <div class="algorithm-visual">
+                                <div class="visual-container">
+                                    <svg width="380" height="220" viewBox="0 0 380 220">
+                                        <path d="M30,180 Q110,60 190,140 Q270,60 350,160" stroke="#adb5bd" stroke-width="2" fill="none"/>
+                                        <circle cx="190" cy="140" r="8" fill="#f72585" />
+                                        <circle cx="270" cy="90" r="8" fill="#4361ee" />
+                                        <path d="M190,140 L190,220" stroke="#f72585" stroke-width="2" stroke-dasharray="5,5" />
+                                        <text x="190" y="200" text-anchor="middle" font-size="12">Cực tiểu cục bộ</text>
+                                        <path d="M270,90 L270,220" stroke="#4361ee" stroke-width="2" stroke-dasharray="5,5" />
+                                        <text x="270" y="200" text-anchor="middle" font-size="12">Cực tiểu toàn cục</text>
+                                        <text x="50" y="50" font-size="14" font-weight="bold">Hàm f(n)</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        `;
+                    } else if (algorithm === 'advanced') {
+                        tabContent.innerHTML = `
+                            <div class="algorithm-info">
+                                <h3>Tìm kiếm nâng cao (Advanced Search)</h3>
+                                <p>Các thuật toán tìm kiếm phức tạp, được sử dụng trong các bài toán đặc biệt hoặc điều kiện tìm kiếm khó khăn.</p>
+                                <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>AND-OR Search</strong> - Giải quyết các bài toán phi tất định
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Search with No Observation</strong> - Tìm kiếm khi không có khả năng quan sát trạng thái
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Search with Partial Observation</strong> - Tìm kiếm với thông tin quan sát một phần
+                                    </li>
+                                    <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                        onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                        onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                        <strong>Backtracking</strong> - Quay lui khi gặp đường cụt trong tìm kiếm
+                                    </li>
+                                </ul>
+
+                            </div>
+                            <div class="algorithm-visual">
+                                <div class="visual-container">
+                                    <svg width="380" height="220" viewBox="0 0 380 220">
+                                        <rect x="150" y="10" width="60" height="60" rx="5" fill="#4361ee" />
+                                        <text x="180" y="45" text-anchor="middle" fill="white" font-weight="bold">S</text>
+                                        
+                                        <rect x="70" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="100" y="135" text-anchor="middle" fill="white" font-weight="bold">A</text>
+                                        
+                                        <rect x="230" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="260" y="135" text-anchor="middle" fill="white" font-weight="bold">O</text>
+                                        
+                                        <rect x="30" y="180" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="60" y="215" text-anchor="middle" fill="white" font-weight="bold">B</text>
+                                        
+                                        <rect x="110" y="180" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="140" y="215" text-anchor="middle" fill="white" font-weight="bold">C</text>
+                                        
+                                        <line x1="180" y1="70" x2="100" y2="100" stroke="#adb5bd" stroke-width="2" />
+                                        <line x1="180" y1="70" x2="260" y2="100" stroke="#adb5bd" stroke-width="2" />
+                                        <line x1="100" y1="160" x2="60" y2="180" stroke="#adb5bd" stroke-width="2" />
+                                        <line x1="100" y1="160" x2="140" y2="180" stroke="#adb5bd" stroke-width="2" />
+                                        
+                                        <path d="M90,100 A30,30 0 0,0 110,100" stroke="#f72585" stroke-width="2" fill="none" />
+                                       <text x="100" y="85" text-anchor="middle" fill="#f72585" font-weight="bold">AND</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+            });
+        }
+        );
+
+
+    </script>
+</body>
+
+</html>

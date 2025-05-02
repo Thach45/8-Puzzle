@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Mô phỏng 8-Puzzle BFS</title>
+    
+</head>
+<body>
+    <div class="container">
+        <ul class="breadcrumb">
+            <li><a href="/">Trang chủ</a></li>
+            <li><a href="/thuat-toan">Uninformed Search</a></li>
+            <li><a href="/iddfs">IDDFS</a></li>
+            <li>Mô phỏng</li>
+        </ul>
+        <header>
+            <h1>Mô phỏng 8-Puzzle với </h1>
+            <p class="description">Giải quyết bài toán 8-Puzzle bằng thuật toán IDDFS </p>
+        </header>
+        <div class="control-panel">
+            <h2 class="panel-title">Thông số thuật toán IDDFS</h2>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-label">Thời gian chạy</div>
+                    <div class="stat-value">{{data['execution_time']}}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Số trạng thái đã duyệt</div>
+                    <div class="stat-value">{{data['nodes_explored']}}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Chiều sâu lời giải</div>
+                    <div class="stat-value">{{data["path_length"]}}</div>
+                </div>
+
+            </div>
+            <div class="buttons">
+                <button id="solve-btn">Chạy thuật toán IDDFS</button>
+                <button id="next-btn">Bước tiếp theo</button>
+                <button id="auto-btn">Tự động giải</button>
+                <button class="reset-btn">Đặt lại</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="matrix-container">
+                <h3 class="matrix-title">Ma trận ban đầu</h3>
+                <div class="matrix initial-matrix">
+                   
+                        {% for tile in data["initial_state"] %}
+                                {%for i in tile%}
+                                    {% if i == 0 %}
+                                        <div class="tile empty"></div>
+                                    {% else %}
+                                        <div class="tile">{{ i }}</div>
+                                    {%endif%}   
+                                {% endfor %}
+                            {% endfor %}
+                    
+                </div>
+            </div>
+            
+            <div class="matrix-container">
+                <h3 class="matrix-title">Ma trận hiện tại</h3>
+                <div class="matrix current-matrix">
+                    
+                </div>
+            </div>
+            
+            <div class="matrix-container">
+                <h3 class="matrix-title">Ma trận mục tiêu</h3>
+                <div class="matrix goal-matrix">
+                    {% for tile in data["goal_state"] %}
+                    {%for i in tile%}
+                        {% if i == 0 %}
+                            <div class="tile empty"></div>
+                        {% else %}
+                            <div class="tile">{{ i }}</div>
+                        {%endif%}   
+                    {% endfor %}
+                {% endfor %}
+                </div>
+            </div>
+        </div>
+        <div class="progress" style="margin-bottom: 20px; width: 100%; background-color: #e5e7eb; border-radius: 4px; overflow: hidden;">
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: 0%; height: 20px; background-color: #3b82f6; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+        
+        
+        <div class="solution-container">
+            <h2 class="solution-title">Các bước giải</h2>
+            <div class="solution-steps">
+            {% for step in data['path'] %}
+                <div class="step">
+                    <div class="step-number">Bước {{ loop.index }}</div>
+                    <div class="mini-matrix">
+                        {% for tile in step %}
+                            {%for i in tile%}
+                                {% if i == "0" %}
+                                    <div class="mini-tile mini-empty"></div>
+                                {% else %}
+                                    <div class="mini-tile">{{ i }}</div>
+                                {%endif%}   
+                            {% endfor %}
+                        {% endfor %}
+                    </div>
+                    <div class="step-direction">
+                        {% if loop.index == 1 %}
+                            Ban đầu
+                        {% elif loop.index == data['path_length'] %}
+                            Mục tiêu
+                        {%endif%}          
+                        
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Các nút điều khiển
+    const solveBtn = document.getElementById('solve-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const autoBtn = document.getElementById('auto-btn');
+    const resetBtn = document.querySelector('.reset-btn');
+    
+    // Ma trận
+    const currentMatrix = document.querySelector('.current-matrix');
+    const initialMatrix = document.querySelector('.initial-matrix');
+    const goalMatrix = document.querySelector('.goal-matrix');
+    
+    // Chuyển đổi ma trận từ chuỗi sang số
+    const parseMatrix = (matrix) => {
+        return matrix.map(row => {
+            return row.map(value => {
+                return typeof value === 'string' ? parseInt(value) : value;
+            });
+        });
+    };
+    
+    // Hiển thị ma trận
+    const displayMatrix = (matrixElement, state) => {
+        matrixElement.innerHTML = '';
+        state.forEach(row => {
+            row.forEach(value => {
+                const tile = document.createElement('div');
+                tile.classList.add('tile');
+                if (value === 0) {
+                    tile.classList.add('empty');
+                } else {
+                    tile.textContent = value;
+                }
+                matrixElement.appendChild(tile);
+            });
+        });
+    };
+    
+    // Lưu trữ giải pháp
+    let solutionPath = [];
+    let currentStep = 0;
+    
+    // Trích xuất dữ liệu từ các bước giải có trong HTML
+    const extractSolutionFromDOM = () => {
+        const solutionSteps = document.querySelectorAll('.step .mini-matrix');
+        return Array.from(solutionSteps).map(stepMatrix => {
+            const tiles = Array.from(stepMatrix.children);
+            const state = [];
+            for (let i = 0; i < 3; i++) {
+                const row = [];
+                for (let j = 0; j < 3; j++) {
+                    const index = i * 3 + j;
+                    const tileContent = tiles[index].classList.contains('mini-empty') ? 0 : parseInt(tiles[index].textContent);
+                    row.push(tileContent);
+                }
+                state.push(row);
+            }
+            return state;
+        });
+    };
+    
+    // Chạy thuật toán BFS
+    solveBtn.addEventListener('click', function() {
+        // Lấy dữ liệu từ các step đã có
+        solutionPath = extractSolutionFromDOM();
+        
+        // Hiển thị ma trận ban đầu
+        currentStep = 0;
+        displayMatrix(currentMatrix, solutionPath[currentStep]);
+        
+        // Highlight bước hiện tại trong solution steps
+        highlightCurrentStep();
+        
+        // Kích hoạt các nút điều khiển
+        nextBtn.disabled = false;
+        autoBtn.disabled = false;
+    });
+    
+    const updateProgressBar = (needPercent) => {
+        const progressBar = document.querySelector('.progress-fill');
+        // lấy giá trị hiện tại của progressBar
+        const currentProgress = parseInt(progressBar.style.width) || 0;
+        const progress = currentProgress + needPercent;
+        console.log(progress);
+        console.log(needPercent);
+        progressBar.style.width = `${progress}%`;
+    };
+    
+    // Hiển thị bước tiếp theo
+    nextBtn.addEventListener('click', function() {
+        if (currentStep < solutionPath.length - 1) {
+            currentStep++;
+            displayMatrix(currentMatrix, solutionPath[currentStep]);
+            highlightCurrentStep();
+            const needPercent =100/ (solutionPath.length-1) ;
+
+            updateProgressBar(needPercent);
+        }
+    });
+    
+    // Highlight bước hiện tại trong solution steps
+    const highlightCurrentStep = () => {
+        const steps = document.querySelectorAll('.step');
+        steps.forEach((step, index) => {
+            if (index === currentStep) {
+                step.style.backgroundColor = 'rgba(79, 195, 247, 0.2)';
+                step.style.borderRadius = '5px';
+                step.style.padding = '10px';
+                step.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            } else {
+                step.style.backgroundColor = 'transparent';
+                step.style.padding = '10px';
+            }
+        });
+    };
+    
+    // Tự động giải
+    let autoSolveInterval;
+    autoBtn.addEventListener('click', function() {
+        if (this.textContent === 'Tự động giải') {
+            this.textContent = 'Dừng lại';
+            autoSolveInterval = setInterval(() => {
+                if (currentStep < solutionPath.length - 1) {
+                    currentStep++;
+                    displayMatrix(currentMatrix, solutionPath[currentStep]);
+                    highlightCurrentStep();
+                    const needPercent =100/ (solutionPath.length-1) ;
+
+                    updateProgressBar(needPercent);
+                } else {
+                    clearInterval(autoSolveInterval);
+                    autoBtn.textContent = 'Tự động giải';
+                }
+            }, 1000); // Thời gian giữa các bước là 1 giây
+        } else {
+            clearInterval(autoSolveInterval);
+            this.textContent = 'Tự động giải';
+        }
+    });
+    
+    // Đặt lại
+    resetBtn.addEventListener('click', function() {
+        // Đặt lại ma trận hiện tại về ma trận ban đầu
+        displayMatrix(currentMatrix, solutionPath[0]);
+        
+        // Đặt lại các biến theo dõi
+        currentStep = 0;
+        const progressBar = document.querySelector('.progress-fill');
+        progressBar.style.width = '0%';
+        // Dừng tự động giải nếu đang chạy
+        clearInterval(autoSolveInterval);
+        autoBtn.textContent = 'Tự động giải';
+        
+        // Xóa highlighting
+        const steps = document.querySelectorAll('.step');
+        steps.forEach(step => {
+            step.style.backgroundColor = 'transparent';
+            step.style.padding = '10px';
+        });
+        
+        // Highlight bước đầu tiên
+        highlightCurrentStep();
+    });
+    
+    // Khởi tạo ban đầu: hiển thị trạng thái ban đầu
+    // Vì dữ liệu đã được render từ Flask, chỉ cần lấy dữ liệu từ DOM
+    solutionPath = extractSolutionFromDOM();
+    
+    // Hiển thị ma trận ban đầu vào ma trận hiện tại
+    if (solutionPath && solutionPath.length > 0) {
+        displayMatrix(currentMatrix, solutionPath[0]);
+        highlightCurrentStep();
+    }
+});
+</script>
+</html>
