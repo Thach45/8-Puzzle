@@ -1,6 +1,8 @@
 from flask import Blueprint, render_template
 from controllers.uninformed_controller import home_controller,bfs_controller, dfs_controller, ucs_controller, iddfs_controller
-
+from controllers.andor_search_controller import andor_controller
+from controllers.no_observation_controller import no_observation_controller
+from controllers.partial_observation_controller import partial_observation_controller
 from controllers.informed_controller import greedy_controller, a_star_controller, ida_star_controller, beam_search_controller
 from controllers.local_search_controller import simple_hill_climbing_controller, steepest_hill_climbing_controller, simulated_annealing_controller, stochastic_hill_climbing_controller
 home_routes_bp = Blueprint('home_routes', __name__)
@@ -16,7 +18,9 @@ simple_hill_climbing_routes_bp =  Blueprint('simple_hill_climbing_routes', __nam
 steepest_hill_climbing_routes_bp =  Blueprint('steepest_hill_climbing_routes', __name__)
 simulated_annealing_routes_bp =  Blueprint('simulated_annealing_routes', __name__)
 stochastic_hill_climbing_routes_bp =  Blueprint('stochastic_hill_climbing_routes', __name__)
-
+and_or_routes_bp =  Blueprint('and_or_routes', __name__)
+no_observation_routes_bp =  Blueprint('no_observation_routes', __name__)
+partial_observation_routes_bp =  Blueprint('partial_observation_routes', __name__)
 @home_routes_bp.route('/')
 def home():
     return home_controller()
@@ -58,3 +62,20 @@ def simulated_annealing():
 @stochastic_hill_climbing_routes_bp.route('/stochastic-hill-climbing')
 def stochastic_hill_climbing():
     return stochastic_hill_climbing_controller()
+
+@and_or_routes_bp.route('/and-or')
+def and_or():
+    return andor_controller()
+
+@and_or_routes_bp.route('/and-or-tree')
+def and_or_tree():
+    return andor_controller()
+
+@no_observation_routes_bp.route('/no-observation')
+def no_observation():
+    return no_observation_controller()
+
+@partial_observation_routes_bp.route('/partial-observation')
+def partial_observation():
+    return partial_observation_controller()
+

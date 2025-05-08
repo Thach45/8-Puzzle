@@ -4,6 +4,7 @@ from routes.home_routes import (
     greedy_routes_bp, a_star_routes_bp, ida_star_routes_bp, beam_search_routes_bp,
     simple_hill_climbing_routes_bp, steepest_hill_climbing_routes_bp,
     simulated_annealing_routes_bp, stochastic_hill_climbing_routes_bp
+    , and_or_routes_bp, no_observation_routes_bp, partial_observation_routes_bp
 )
 
 app = Flask(__name__, template_folder='views')
@@ -27,5 +28,8 @@ app.register_blueprint(steepest_hill_climbing_routes_bp)
 app.register_blueprint(simulated_annealing_routes_bp)
 app.register_blueprint(stochastic_hill_climbing_routes_bp)
 
+app.register_blueprint(and_or_routes_bp)
+app.register_blueprint(no_observation_routes_bp)
+app.register_blueprint(partial_observation_routes_bp)
 if __name__ == '__main__':
     app.run(debug=True)
