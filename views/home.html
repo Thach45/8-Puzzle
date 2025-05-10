@@ -466,7 +466,9 @@
                 <button class="tab-btn active" data-tab="uninformed">Tìm kiếm không có thông tin</button>
                 <button class="tab-btn" data-tab="informed">Tìm kiếm có thông tin</button>
                 <button class="tab-btn" data-tab="local">Tìm kiếm cục bộ</button>
-                <button class="tab-btn" data-tab="advanced">Tìm kiếm nâng cao</button>
+                <button class="tab-btn" data-tab="advanced">Tìm kiếm trong môi trường phức tạp</button>
+                <button class="tab-btn" data-tab="constraint">Tìm kiếm trong môi trường ràng buộc</button>
+                <button class="tab-btn" data-tab="reinforce">Tìm kiếm tăng cường</button>
             </div>
             <div class="tab-content">
                 <div class="algorithm-info">
@@ -645,13 +647,7 @@
                                             <strong>IDA* (Iterative Deepening A*)</strong> - Kết hợp IDDFS và A*
                                         </li>
                                     </a>
-                                    <a href="/beam" style="text-decoration: none; color: inherit;">
-                                        <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
-                                            onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
-                                            onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
-                                            <strong>Beam Search</strong> - Giới hạn số lượng trạng thái được xem xét ở mỗi cấp
-                                        </li>
-                                    </a>
+                                   
                                 </ul>
                                     
 
@@ -716,6 +712,13 @@
                                             <strong>Simulated Annealing</strong> - Tìm kiếm theo phương pháp làm nguội
                                         </li>
                                     </a>
+                                    <a href="/beam" style="text-decoration: none; color: inherit;">
+                                        <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                            onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                            onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                            <strong>Beam Search</strong> - Giới hạn số lượng trạng thái được xem xét ở mỗi cấp
+                                        </li>
+                                    </a>
                                     
                                 </ul>
 
@@ -738,8 +741,8 @@
                     } else if (algorithm === 'advanced') {
                         tabContent.innerHTML = `
                             <div class="algorithm-info">
-                                <h3>Tìm kiếm nâng cao (Advanced Search)</h3>
-                                <p>Các thuật toán tìm kiếm phức tạp, được sử dụng trong các bài toán đặc biệt hoặc điều kiện tìm kiếm khó khăn.</p>
+                                <h3>Tìm kiếm trong môi trường phức tạp </h3>
+                                <p>Các thuật toán tìm kiếm trong môi trường phức tạp.</p>
                                 <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
                                     <a href="/and-or" style="text-decoration: none; color: inherit;">
                                         <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
@@ -760,13 +763,6 @@
                                             onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
                                             onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
                                             <strong>Search with Partial Observation</strong> - Tìm kiếm với thông tin quan sát một phần
-                                        </li>
-                                    </a>
-                                    <a href="/backtracking" style="text-decoration: none; color: inherit;">
-                                        <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
-                                            onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
-                                            onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
-                                            <strong>Backtracking</strong> - Quay lui khi gặp đường cụt trong tìm kiếm
                                         </li>
                                     </a>
                                 </ul>
@@ -800,7 +796,112 @@
                                 </div>
                             </div>
                         `;
+                    } else if(algorithm==="constraint"){
+                        tabContent.innerHTML=`
+                            <div class="algorithm-info">
+                                <h3>Tìm kiếm ràng buộc (Constraint Satisfaction)</h3>
+                                <p>Các thuật toán tìm kiếm ràng buộc giúp giải quyết các bài toán có nhiều biến và ràng buộc.</p>
+                                <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
+                                    <a href="/backtracking" style="text-decoration: none; color: inherit;">
+                                        <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                            onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                            onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                            <strong>Backtracking</strong> - Tìm kiếm theo phương pháp quay lui
+                                        </li>
+                                    </a>
+                                    <a href="/ac3" style="text-decoration: none; color: inherit;">
+                                        <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                            onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                            onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                            <strong>AC-3</strong> - Kiểm tra trước khi quay lui
+                                        </li>
+                                    </a>
+                                    <a href="/forward-checking" style="text-decoration: none; color: inherit;">
+                                        <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                            onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                            onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                            <strong>Forward Checking</strong> - Đảm bảo tính nhất quán giữa các biến
+                                        </li>
+                                    </a>
+                                </ul>
+                            </div>
+                            <div class="algorithm-visual">
+                                <div class="visual-container">
+                                    <svg width="380" height="220" viewBox="0 0 380 220">
+                                        <rect x="150" y="10" width="60" height="60" rx="5" fill="#4361ee" />
+                                        <text x="180" y="45" text-anchor="middle" fill="white" font-weight="bold">S</text>
+                                        
+                                        <rect x="70" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="100" y="135" text-anchor="middle" fill="white" font-weight="bold">A</text>
+                                        
+                                        <rect x="230" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="260" y="135" text-anchor="middle" fill="white" font-weight="bold">O</text>
+                                        
+                                        <rect x="30" y="180" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="60" y="215" text-anchor="middle" fill="white" font-weight="bold">B</text>
+                                        
+                                        <rect x="110" y="180" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="140" y="215" text-anchor="middle" fill="white" font-weight="bold">C</text>
+                                        
+                                        <line x1="180" y1="70" x2="100" y2="100" stroke="#adb5bd" stroke-width="2"/>
+                                        <line x1='180' y1='70' x2='260' y2='100' stroke='#adb5bd' stroke-width='2'/>
+                                        
+                                        <path d='M90,100 A30,30 0 0,0 110,100' stroke='#f72585' stroke-width='2' fill='none'/>
+                                       <text x='100' y='85' text-anchor='middle' fill='#f72585' font-weight='bold'>AND</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        tabContent.innerHTML = `
+                            <div class="algorithm-info">
+                                <h3>Thuật toán tìm kiếm tăng cường</h3>
+                                <p>Các thuật toán tìm kiếm tăng cường giúp cải thiện hiệu suất tìm kiếm trong các bài toán phức tạp.</p>
+                                <ul style="margin-bottom: 1rem; list-style-type: none; padding-left: 0;">
+                                    <a href="/q-learning" style="text-decoration: none; color: inherit;">
+                                        <li style="margin-bottom: 1rem; padding: 1rem; background-color: #f0f4f8; border-radius: 4px; transition: all 0.3s ease;"
+                                            onmouseover="this.style.backgroundColor='#dbeafe'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+                                            onmouseout="this.style.backgroundColor='#f0f4f8'; this.style.boxShadow='none';">
+                                            <strong>Q-Learning</strong> - Thuật toán Q-learning
+                                        </li>
+                                    </a>
+                                </ul>
+
+  
+                            </div>
+                            <div class="algorithm-visual">
+                                <div class="visual-container">
+                                    <svg width="380" height="220" viewBox="0 0 380 220">
+                                        <rect x="150" y="10" width="60" height="60" rx="5" fill="#4361ee" />
+                                        <text x="180" y="45" text-anchor="middle" fill="white" font-weight="bold">S</text>
+                                        
+                                        <rect x="70" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="100" y="135" text-anchor="middle" fill="white" font-weight="bold">A</text>
+                                        
+                                        <rect x="230" y="100" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="260" y="135" text-anchor="middle" fill="white" font-weight="bold">O</text>
+                                        
+                                        <rect x="30" y="180" width="60" height="60" rx="5" fill="#4cc9f0" />
+                                        <text x="60" y="215" text-anchor="middle" fill="white" font-weight="bold">B</text>
+                                        
+                                        <rect x="110" y="180" width="60" height="60" rx="5" fill="#4cc9f0"/>
+                                        <text x='140' y='215' text-anchor='middle' fill='white' font-weight='bold'>C</text>
+                                        
+                                        <line x1='180' y1='70' x2='100' y2='100' stroke='#adb5bd' stroke-width='2'/>
+                                        <line x1='180' y1='70' x2='260' y2='100' stroke='#adb5bd' stroke-width='2'/>
+                                        
+                                        <path d='M90,100 A30,30 0 0,0 110,100' stroke='#f72585' stroke-width='2' fill='none'/>
+                                       <text x='100' y='85' text-anchor='middle' fill='#f72585' font-weight='bold'>AND</text>
+                                    </svg>
+                                </div>
+                            </div>
+                        `;
+
+
                     }
+                    
+
+                    
                 });
             });
         }

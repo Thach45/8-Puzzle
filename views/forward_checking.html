@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Forward Checking CSP - 8-Puzzle (Ràng buộc goal)</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; display: flex; gap: 20px; }
+        .puzzle-container, .info-panel {
+            background: white; padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1;
+        }
+        .constraint-box {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            border-radius: 6px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            color: #15417e;
+        }
+        .constraint-box ul { margin: 8px 0 0 18px; }
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 240px;
+            margin: 20px auto;
+        }
+        .puzzle-cell-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 6px 0 2px 0;
+            min-height: 90px;
+        }
+        .puzzle-select { width: 60px; height: 60px; font-size: 24px; text-align: center; border-radius: 4px; border: 2px solid #4a90e2; background: #fff; }
+        .domain-cell { font-size: 13px; color: #1976d2; text-align: center; margin-top: 4px; min-height: 18px; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #cccccc; cursor: not-allowed; }
+        .step-list { margin-top: 20px; max-height: 250px; overflow-y: auto; }
+        .step-item { padding: 10px; border-bottom: 1px solid #eee; }
+        h1, h2 { text-align: center; color: #2c3e50; }
+        .visited-section { margin-top: 20px; }
+        .visited-title { font-weight: bold; margin-bottom: 8px; }
+        .visited-list { display: flex; flex-wrap: wrap; gap: 10px; max-height: 200px; overflow-y: auto; }
+        .visited-matrix { border: 1px solid #bbb; border-radius: 4px; padding: 4px; background: #f8f9fa; }
+        .visited-matrix-row { display: flex; }
+        .visited-matrix-cell { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin: 1px; background: #fff; border-radius: 2px; }
+        .solution-section { margin-top: 20px; }
+        .solution-title { font-weight: bold; margin-bottom: 8px; }
+        .solution-path { display: flex; flex-wrap: wrap; gap: 10px; }
+        .solution-matrix { border: 2px solid #388e3c; border-radius: 4px; padding: 4px; background: #e8f5e9; }
+        .solution-matrix-row { display: flex; }
+        .solution-matrix-cell { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin: 1px; background: #fff; border-radius: 2px; }
+        .success { color: #388e3c; font-weight: bold; }
+        .backtrack { color: #d32f2f; font-weight: bold; }
+        .error { color: #d32f2f; font-weight: bold; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Mô phỏng Forward Checking CSP cho 8-Puzzle (Ràng buộc goal)</h1>
+    <div class="container">
+        <div class="puzzle-container">
+            <h2>Nhập trạng thái 8-Puzzle (theo ràng buộc goal)</h2>
+            <div class="constraint-box">
+                <b>Ràng buộc CSP cho trạng thái goal:</b>
+                <ul>
+                    <li><b>Không trùng lặp:</b> Mỗi số từ 0 đến 8 chỉ xuất hiện một lần.</li>
+                    <li><b>Ràng buộc liên tiếp (theo hàng):</b> Hai ô liên tiếp trên cùng một hàng phải chênh lệch đúng 1.<br>
+                        <span style="color:#1976d2;">Ví dụ: 2 - 1 = 1, 3 - 2 = 1, 5 - 4 = 1, ...</span></li>
+                    <li><b>Ràng buộc theo cột:</b> Hai ô cùng cột liền kề phải chênh lệch đúng 3.<br>
+                        <span style="color:#1976d2;">Ví dụ: 4 - 1 = 3, 5 - 2 = 3, 7 - 4 = 3, ...</span></li>
+                </ul>
+            </div>
+            <form id="inputForm" autocomplete="off" onsubmit="return false;">
+                <div class="puzzle-board" id="inputBoard"></div>
+            </form>
+            <div class="controls">
+                <button onclick="checkValid()" id="checkBtn">Kiểm tra hợp lệ</button>
+                <button onclick="startSolving()" id="startBtn" disabled>Bắt đầu giải</button>
+                <button onclick="resetInput()" id="resetBtn">Đặt lại</button>
+            </div>
+            <div id="errorMsg" class="error"></div>
+        </div>
+        <div class="info-panel">
+            <h2>Thông tin CSP & Forward Checking</h2>
+            <div id="domainInfo"></div>
+            <div class="step-list" id="stepList"></div>
+            <div class="visited-section">
+                <div class="visited-title">Các trạng thái đã thăm:</div>
+                <div class="visited-list" id="visitedList"></div>
+            </div>
+            <div class="solution-section" id="solutionSection" style="display:none;">
+                <div class="solution-title" id="solutionTitle"></div>
+                <div class="solution-path" id="solutionPath"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const N = 9;
+        const goalState = [1,2,3,4,5,6,7,8,0];
+        let inputState = Array(N).fill(null);
+        let domains = Array(N).fill().map(() => new Set([0,1,2,3,4,5,6,7,8]));
+        let currentState = null;
+        let solving = false;
+        let stack = [];
+        let visited = new Set();
+        let visitedArr = [];
+        let path = [];
+        let solution = null;
+
+        function renderInputBoard() {
+            const board = document.getElementById('inputBoard');
+            board.innerHTML = '';
+            for (let i = 0; i < N; i++) {
+                const block = document.createElement('div');
+                block.className = 'puzzle-cell-block';
+                // select box
+                const select = document.createElement('select');
+                select.className = 'puzzle-select';
+                select.disabled = solving;
+                // Tạo option cho domain còn lại
+                const domain = Array.from(domains[i]).sort((a,b)=>a-b);
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = '';
+                if (inputState[i] === null) emptyOption.selected = true;
+                select.appendChild(emptyOption);
+                domain.forEach(val => {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.textContent = val;
+                    if (inputState[i] === val) option.selected = true;
+                    select.appendChild(option);
+                });
+                select.onchange = (e) => handleInput(i, e.target.value === '' ? null : parseInt(e.target.value));
+                block.appendChild(select);
+                // domain info
+                const domainDiv = document.createElement('div');
+                domainDiv.className = 'domain-cell';
+                domainDiv.textContent = 'Miền: ' + domain.join(', ');
+                block.appendChild(domainDiv);
+                board.appendChild(block);
+            }
+        }
+
+        function handleInput(idx, value) {
+            inputState[idx] = value;
+            updateDomains();
+            renderInputBoard();
+            document.getElementById('startBtn').disabled = !isInputFullValid();
+        }
+
+        function updateDomains() {
+            // Cập nhật lại domain cho từng biến dựa trên các giá trị đã gán và ràng buộc goal
+            let used = new Set(inputState.filter(v => v !== null));
+            for (let i = 0; i < N; i++) {
+                if (inputState[i] !== null) {
+                    domains[i] = new Set([inputState[i]]);
+                } else {
+                    // Tập giá trị chưa dùng
+                    let possible = [...Array(9).keys()].filter(x => !used.has(x));
+                    // Áp dụng ràng buộc goal
+                    possible = possible.filter(val => checkGoalConstraint(i, val, inputState));
+                    domains[i] = new Set(possible);
+                }
+            }
+            showDomains();
+            // Nếu có ô nào domain rỗng, báo lỗi
+            let hasEmpty = domains.some(d => d.size === 0);
+            document.getElementById('errorMsg').textContent = hasEmpty ? 'Có ô không còn giá trị hợp lệ do vi phạm ràng buộc goal!' : '';
+        }
+
+        function checkGoalConstraint(idx, val, state) {
+            // Ràng buộc: các ô liên tiếp (cùng hàng) chênh lệch 1, cùng cột chênh lệch 3, và không trùng lặp
+            // Kiểm tra với các ô đã gán trước đó
+            // Ràng buộc hàng ngang: idx%3 != 0 => val - state[idx-1] == 1 nếu state[idx-1] != null
+            if (idx % 3 !== 0 && state[idx-1] !== null) {
+                if (val - state[idx-1] !== 1) return false;
+            }
+            // Ràng buộc hàng dọc: idx >= 3 => val - state[idx-3] == 3 nếu state[idx-3] != null
+            if (idx >= 3 && state[idx-3] !== null) {
+                if (val - state[idx-3] !== 3) return false;
+            }
+            // Ràng buộc ngược lại: nếu ô sau đã gán, kiểm tra val với ô sau
+            if (idx % 3 !== 2 && state[idx+1] !== null) {
+                if (state[idx+1] - val !== 1) return false;
+            }
+            if (idx < 6 && state[idx+3] !== null) {
+                if (state[idx+3] - val !== 3) return false;
+            }
+            return true;
+        }
+
+        function isInputFullValid() {
+            // Đủ 9 giá trị, không trùng, đủ 0-8, và thỏa mãn ràng buộc goal
+            const vals = inputState.filter(v => v !== null);
+            if (vals.length !== 9) return false;
+            const set = new Set(vals);
+            for (let i = 0; i < 9; i++) if (!set.has(i)) return false;
+            // Kiểm tra ràng buộc goal cho toàn bộ
+            for (let i = 0; i < 9; i++) {
+                if (!checkGoalConstraint(i, inputState[i], inputState)) return false;
+            }
+            return true;
+        }
+
+        function checkValid() {
+            updateDomains();
+            renderInputBoard();
+            if (isInputFullValid()) {
+                addStep('<span class="success">Trạng thái hợp lệ! Bạn có thể bắt đầu giải.</span>', 'success');
+                document.getElementById('startBtn').disabled = false;
+            } else {
+                addStep('<span class="backtrack">Trạng thái chưa hợp lệ hoặc còn thiếu giá trị!</span>', 'backtrack');
+                document.getElementById('startBtn').disabled = true;
+            }
+        }
+
+        function resetInput() {
+            inputState = Array(N).fill(null);
+            domains = Array(N).fill().map(() => new Set([0,1,2,3,4,5,6,7,8]));
+            solving = false;
+            stack = [];
+            visited = new Set();
+            visitedArr = [];
+            path = [];
+            solution = null;
+            renderInputBoard();
+            resetInfo();
+            document.getElementById('errorMsg').textContent = '';
+        }
+
+        function showDomains() {
+            let html = '';
+            for (let i = 0; i < N; i++) {
+                html += `<div>Ô ${i}: {${Array.from(domains[i]).sort().join(', ')}}</div>`;
+            }
+            document.getElementById('domainInfo').innerHTML = html;
+        }
+
+        function addStep(text, type = '') {
+            const stepList = document.getElementById('stepList');
+            const div = document.createElement('div');
+            div.className = 'step-item' + (type ? ' ' + type : '');
+            div.innerHTML = text;
+            stepList.insertBefore(div, stepList.firstChild);
+        }
+
+        function renderVisited() {
+            const visitedList = document.getElementById('visitedList');
+            visitedList.innerHTML = '';
+            visitedArr.forEach(stateStr => {
+                const state = stateStr.split(',').map(Number);
+                const matrix = document.createElement('div');
+                matrix.className = 'visited-matrix';
+                for (let i = 0; i < 3; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'visited-matrix-row';
+                    for (let j = 0; j < 3; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'visited-matrix-cell';
+                        const v = state[i*3+j];
+                        cell.textContent = v === 0 ? '_' : v;
+                        row.appendChild(cell);
+                    }
+                    matrix.appendChild(row);
+                }
+                visitedList.appendChild(matrix);
+            });
+        }
+
+        function renderSolutionPath(pathArr) {
+            const section = document.getElementById('solutionSection');
+            const title = document.getElementById('solutionTitle');
+            const pathDiv = document.getElementById('solutionPath');
+            section.style.display = 'block';
+            pathDiv.innerHTML = '';
+            title.textContent = `Đường đi tới lời giải (${pathArr.length-1} bước):`;
+            pathArr.forEach(state => {
+                const matrix = document.createElement('div');
+                matrix.className = 'solution-matrix';
+                for (let i = 0; i < 3; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'solution-matrix-row';
+                    for (let j = 0; j < 3; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'solution-matrix-cell';
+                        const v = state[i*3+j];
+                        cell.textContent = v === 0 ? '_' : v;
+                        row.appendChild(cell);
+                    }
+                    matrix.appendChild(row);
+                }
+                pathDiv.appendChild(matrix);
+            });
+        }
+
+        function resetInfo() {
+            document.getElementById('domainInfo').innerHTML = '';
+            document.getElementById('stepList').innerHTML = '';
+            document.getElementById('visitedList').innerHTML = '';
+            document.getElementById('solutionSection').style.display = 'none';
+            document.getElementById('startBtn').disabled = true;
+        }
+
+        // --- Giải bằng Forward Checking như cũ, dùng inputState làm trạng thái đầu ---
+        function startSolving() {
+            if (!isInputFullValid()) return;
+            solving = true;
+            currentState = [...inputState];
+            stack = [];
+            visited = new Set();
+            visitedArr = [];
+            path = [];
+            solution = null;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('checkBtn').disabled = true;
+            document.getElementById('resetBtn').disabled = true;
+            document.querySelectorAll('.puzzle-select').forEach(e => e.disabled = true);
+            visited.add(currentState.join(','));
+            visitedArr.push(currentState.join(','));
+            stack.push({ state: [...currentState], path: [], domains: getValidMoves(currentState) });
+            showDomains();
+            renderVisited();
+            addStep('Bắt đầu giải bằng Forward Checking + Backtracking.');
+            document.getElementById('nextBtn').disabled = false;
+        }
+
+        function getValidMoves(state) {
+            const empty = state.indexOf(0);
+            const moves = [];
+            const row = Math.floor(empty / 3);
+            const col = empty % 3;
+            if (row > 0) moves.push(empty - 3);
+            if (row < 2) moves.push(empty + 3);
+            if (col > 0) moves.push(empty - 1);
+            if (col < 2) moves.push(empty + 1);
+            return moves;
+        }
+
+        function nextStep() {
+            if (!solving || stack.length === 0) {
+                addStep('<span class="backtrack">Không tìm thấy lời giải!</span>', 'backtrack');
+                document.getElementById('nextBtn').disabled = true;
+                document.getElementById('solutionSection').style.display = 'block';
+                document.getElementById('solutionTitle').textContent = 'Không tìm thấy lời giải.';
+                document.getElementById('solutionPath').innerHTML = '';
+                return;
+            }
+            let node = stack.pop();
+            currentState = [...node.state];
+            path = node.path;
+            renderInputBoard();
+            showDomains();
+            renderVisited();
+
+            // Đã đạt trạng thái đích
+            if (currentState.join(',') === goalState.join(',')) {
+                addStep(`<span class="success">🎉 Đã tìm thấy lời giải! Số bước: ${path.length}</span>`, 'success');
+                document.getElementById('nextBtn').disabled = true;
+                solving = false;
+                // Hiển thị đường đi lời giải
+                let solutionPath = [[...goalState]];
+                if (path.length > 0) {
+                    let tempState = [...goalState];
+                    solutionPath = [[...goalState]];
+                    for (let i = path.length - 1; i >= 0; i--) {
+                        const move = path[i];
+                        const empty = tempState.indexOf(0);
+                        [tempState[empty], tempState[move]] = [tempState[move], tempState[empty]];
+                        solutionPath.unshift([...tempState]);
+                    }
+                }
+                renderSolutionPath(solutionPath.reverse());
+                return;
+            }
+
+            // Nếu còn miền giá trị (bước đi hợp lệ)
+            if (node.domains.length > 0) {
+                // Chọn một bước đi (theo thứ tự)
+                const move = node.domains.shift();
+                // Đẩy lại node hiện tại với miền giá trị đã loại bỏ bước vừa chọn
+                stack.push({ state: [...currentState], path: [...path], domains: [...node.domains] });
+                // Sinh trạng thái mới
+                const newState = [...currentState];
+                const empty = newState.indexOf(0);
+                [newState[empty], newState[move]] = [newState[move], newState[empty]];
+                // Nếu chưa thăm trạng thái này thì tiếp tục
+                if (!visited.has(newState.join(','))) {
+                    visited.add(newState.join(','));
+                    visitedArr.push(newState.join(','));
+                    const newDomains = getValidMoves(newState);
+                    stack.push({ state: newState, path: [...path, move], domains: newDomains });
+                    addStep(`Gán: di chuyển số ${currentState[move]} sang ô trống.`, '');
+                } else {
+                    addStep(`Bỏ qua trạng thái đã thăm.`, 'backtrack');
+                }
+            } else {
+                // Không còn miền giá trị, backtrack
+                addStep(`<span class="backtrack">Backtrack: Không còn miền giá trị hợp lệ, quay lui.</span>`, 'backtrack');
+            }
+        }
+
+        window.onload = function() {
+            renderInputBoard();
+            resetInfo();
+            document.getElementById('nextBtn').disabled = true;
+        };
+    </script>
+    <div class="controls" style="justify-content:center; margin-top:30px;">
+        <button onclick="nextStep()" id="nextBtn" disabled>Bước tiếp theo</button>
+    </div>
+</body>
+</html>

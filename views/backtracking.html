@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Backtracking CSP - 8-Puzzle</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; display: flex; gap: 20px; }
+        .puzzle-container, .info-panel {
+            background: white; padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1;
+        }
+        .puzzle-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 300px; height: 300px; margin: 20px auto; }
+        .puzzle-cell {
+            background: #4a90e2; color: white; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;
+        }
+        .puzzle-cell.empty { background: #e9ecef; color: #4a90e2; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #cccccc; cursor: not-allowed; }
+        .step-list { margin-top: 20px; max-height: 250px; overflow-y: auto; }
+        .step-item { padding: 10px; border-bottom: 1px solid #eee; }
+        .highlight { background: #fff3cd; }
+        h1, h2 { text-align: center; color: #2c3e50; }
+        .domain-list { margin: 10px 0; }
+        .domain-list span { display: inline-block; margin-right: 8px; }
+        .backtrack { color: #d32f2f; font-weight: bold; }
+        .success { color: #388e3c; font-weight: bold; }
+        .visited-section { margin-top: 20px; }
+        .visited-title { font-weight: bold; margin-bottom: 8px; }
+        .visited-list { display: flex; flex-wrap: wrap; gap: 10px; max-height: 200px; overflow-y: auto; }
+        .visited-matrix { border: 1px solid #bbb; border-radius: 4px; padding: 4px; background: #f8f9fa; }
+        .visited-matrix-row { display: flex; }
+        .visited-matrix-cell { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin: 1px; background: #fff; border-radius: 2px; }
+        .solution-section { margin-top: 20px; }
+        .solution-title { font-weight: bold; margin-bottom: 8px; }
+        .solution-path { display: flex; flex-wrap: wrap; gap: 10px; }
+        .solution-matrix { border: 2px solid #388e3c; border-radius: 4px; padding: 4px; background: #e8f5e9; }
+        .solution-matrix-row { display: flex; }
+        .solution-matrix-cell { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin: 1px; background: #fff; border-radius: 2px; }
+    </style>
+</head>
+<body>
+    <h1>Mô phỏng Backtracking CSP cho 8-Puzzle</h1>
+    <div class="container">
+        <div class="puzzle-container">
+            <h2>Bảng 8-Puzzle</h2>
+            <div class="puzzle-board" id="puzzleBoard"></div>
+            <div class="controls">
+                <button onclick="shufflePuzzle()" id="shuffleBtn">Tạo trạng thái ngẫu nhiên</button>
+                <button onclick="startSolving()" id="startBtn">Bắt đầu giải</button>
+                <button onclick="nextStep()" id="nextBtn" disabled>Bước tiếp theo</button>
+                <button onclick="resetPuzzle()" id="resetBtn">Đặt lại</button>
+            </div>
+        </div>
+        <div class="info-panel">
+            <h2>Quá trình giải Backtracking CSP</h2>
+            <div id="domainInfo"></div>
+            <div class="step-list" id="stepList"></div>
+            <div class="visited-section">
+                <div class="visited-title">Các trạng thái đã thăm:</div>
+                <div class="visited-list" id="visitedList"></div>
+            </div>
+            <div class="solution-section" id="solutionSection" style="display:none;">
+                <div class="solution-title" id="solutionTitle"></div>
+                <div class="solution-path" id="solutionPath"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const goalState = [1,2,3,4,5,6,7,8,0];
+        let currentState = [...goalState];
+        let solving = false;
+        let stack = [];
+        let visited = new Set();
+        let visitedArr = [];
+        let path = [];
+        let solution = null;
+
+        function renderPuzzle(state = currentState) {
+            const board = document.getElementById('puzzleBoard');
+            board.innerHTML = '';
+            state.forEach((value, idx) => {
+                const cell = document.createElement('div');
+                cell.className = `puzzle-cell${value === 0 ? ' empty' : ''}`;
+                cell.textContent = value === 0 ? '' : value;
+                board.appendChild(cell);
+            });
+        }
+
+        function shufflePuzzle() {
+            do {
+                currentState = [...goalState];
+                for (let i = currentState.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [currentState[i], currentState[j]] = [currentState[j], currentState[i]];
+                }
+            } while (!isSolvable(currentState));
+            renderPuzzle();
+            resetInfo();
+            addStep('Đã tạo trạng thái ngẫu nhiên mới.');
+        }
+
+        function isSolvable(state) {
+            let inv = 0;
+            const arr = state.filter(x => x !== 0);
+            for (let i = 0; i < arr.length - 1; i++)
+                for (let j = i + 1; j < arr.length; j++)
+                    if (arr[i] > arr[j]) inv++;
+            return inv % 2 === 0;
+        }
+
+        function resetPuzzle() {
+            currentState = [...goalState];
+            solving = false;
+            stack = [];
+            visited = new Set();
+            visitedArr = [];
+            path = [];
+            solution = null;
+            renderPuzzle();
+            resetInfo();
+            addStep('Đã đặt lại puzzle về trạng thái ban đầu.');
+        }
+
+        function resetInfo() {
+            document.getElementById('domainInfo').innerHTML = '';
+            document.getElementById('stepList').innerHTML = '';
+            document.getElementById('nextBtn').disabled = true;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('shuffleBtn').disabled = false;
+            document.getElementById('visitedList').innerHTML = '';
+            document.getElementById('solutionSection').style.display = 'none';
+        }
+
+        function addStep(text, type = '') {
+            const stepList = document.getElementById('stepList');
+            const div = document.createElement('div');
+            div.className = 'step-item' + (type ? ' ' + type : '');
+            div.innerHTML = text;
+            stepList.insertBefore(div, stepList.firstChild);
+        }
+
+        function getValidMoves(state) {
+            const empty = state.indexOf(0);
+            const moves = [];
+            const row = Math.floor(empty / 3);
+            const col = empty % 3;
+            if (row > 0) moves.push(empty - 3);
+            if (row < 2) moves.push(empty + 3);
+            if (col > 0) moves.push(empty - 1);
+            if (col < 2) moves.push(empty + 1);
+            return moves;
+        }
+
+        function showDomains(state) {
+            const empty = state.indexOf(0);
+            const moves = getValidMoves(state);
+            let html = `<div class='domain-list'><b>Các bước đi hợp lệ cho ô trống [${empty}]:</b> `;
+            html += moves.map(m => state[m]).join(', ');
+            html += '</div>';
+            document.getElementById('domainInfo').innerHTML = html;
+        }
+
+        function renderVisited() {
+            const visitedList = document.getElementById('visitedList');
+            visitedList.innerHTML = '';
+            visitedArr.forEach(stateStr => {
+                const state = stateStr.split(',').map(Number);
+                const matrix = document.createElement('div');
+                matrix.className = 'visited-matrix';
+                for (let i = 0; i < 3; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'visited-matrix-row';
+                    for (let j = 0; j < 3; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'visited-matrix-cell';
+                        const v = state[i*3+j];
+                        cell.textContent = v === 0 ? '_' : v;
+                        row.appendChild(cell);
+                    }
+                    matrix.appendChild(row);
+                }
+                visitedList.appendChild(matrix);
+            });
+        }
+
+        function renderSolutionPath(pathArr) {
+            const section = document.getElementById('solutionSection');
+            const title = document.getElementById('solutionTitle');
+            const pathDiv = document.getElementById('solutionPath');
+            section.style.display = 'block';
+            pathDiv.innerHTML = '';
+            title.textContent = `Đường đi tới lời giải (${pathArr.length-1} bước):`;
+            pathArr.forEach(state => {
+                const matrix = document.createElement('div');
+                matrix.className = 'solution-matrix';
+                for (let i = 0; i < 3; i++) {
+                    const row = document.createElement('div');
+                    row.className = 'solution-matrix-row';
+                    for (let j = 0; j < 3; j++) {
+                        const cell = document.createElement('div');
+                        cell.className = 'solution-matrix-cell';
+                        const v = state[i*3+j];
+                        cell.textContent = v === 0 ? '_' : v;
+                        row.appendChild(cell);
+                    }
+                    matrix.appendChild(row);
+                }
+                pathDiv.appendChild(matrix);
+            });
+        }
+
+        function startSolving() {
+            solving = true;
+            stack = [];
+            visited = new Set();
+            visitedArr = [];
+            path = [];
+            solution = null;
+            document.getElementById('nextBtn').disabled = false;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('shuffleBtn').disabled = true;
+            visited.add(currentState.join(','));
+            visitedArr.push(currentState.join(','));
+            stack.push({ state: [...currentState], path: [], moves: getValidMoves(currentState) });
+            showDomains(currentState);
+            renderVisited();
+            addStep('Bắt đầu giải bằng Backtracking CSP.');
+        }
+
+        function nextStep() {
+            if (!solving || stack.length === 0) {
+                addStep('<span class="backtrack">Không tìm thấy lời giải!</span>', 'backtrack');
+                document.getElementById('nextBtn').disabled = true;
+                document.getElementById('solutionSection').style.display = 'block';
+                document.getElementById('solutionTitle').textContent = 'Không tìm thấy lời giải.';
+                document.getElementById('solutionPath').innerHTML = '';
+                return;
+            }
+            let node = stack.pop();
+            currentState = [...node.state];
+            path = node.path;
+            renderPuzzle();
+            showDomains(currentState);
+            renderVisited();
+
+            // Đã đạt trạng thái đích
+            if (currentState.join(',') === goalState.join(',')) {
+                addStep(`<span class="success">🎉 Đã tìm thấy lời giải! Số bước: ${path.length}</span>`, 'success');
+                document.getElementById('nextBtn').disabled = true;
+                solving = false;
+                // Hiển thị đường đi lời giải
+                let solutionPath = [[...goalState]];
+                if (path.length > 0) {
+                    let tempState = [...goalState];
+                    solutionPath = [[...goalState]];
+                    for (let i = path.length - 1; i >= 0; i--) {
+                        const move = path[i];
+                        const empty = tempState.indexOf(0);
+                        [tempState[empty], tempState[move]] = [tempState[move], tempState[empty]];
+                        solutionPath.unshift([...tempState]);
+                    }
+                }
+                renderSolutionPath(solutionPath.reverse());
+                return;
+            }
+
+            // Nếu còn bước đi hợp lệ
+            if (node.moves.length > 0) {
+                // Chọn một bước đi (theo thứ tự)
+                const move = node.moves.shift();
+                // Đẩy lại node hiện tại với các bước còn lại
+                stack.push({ state: [...currentState], path: [...path], moves: [...node.moves] });
+                // Sinh trạng thái mới
+                const newState = [...currentState];
+                const empty = newState.indexOf(0);
+                [newState[empty], newState[move]] = [newState[move], newState[empty]];
+                // Nếu chưa thăm trạng thái này thì tiếp tục
+                if (!visited.has(newState.join(','))) {
+                    visited.add(newState.join(','));
+                    visitedArr.push(newState.join(','));
+                    const newMoves = getValidMoves(newState);
+                    stack.push({ state: newState, path: [...path, move], moves: newMoves });
+                    addStep(`Gán: di chuyển số ${currentState[move]} sang ô trống.`, '');
+                } else {
+                    addStep(`Bỏ qua trạng thái đã thăm.`, 'backtrack');
+                }
+            } else {
+                // Không còn bước đi hợp lệ, backtrack
+                addStep(`<span class="backtrack">Backtrack: Không còn bước đi hợp lệ, quay lui.</span>`, 'backtrack');
+            }
+        }
+
+        window.onload = function() {
+            renderPuzzle();
+            resetInfo();
+        };
+    </script>
+</body>
+</html>
