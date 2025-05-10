@@ -25,6 +25,7 @@ and_or_routes_bp = Blueprint('and_or_routes', __name__)
 no_observation_routes_bp = Blueprint('no_observation_routes', __name__)
 partial_observation_routes_bp = Blueprint('partial_observation_routes', __name__)
 forward_checking_routes_bp = Blueprint('forward_checking_routes', __name__)
+ac_3_routes_bp = Blueprint('ac_3_routes', __name__)
 
 @home_routes_bp.route('/')
 def home():
@@ -100,3 +101,6 @@ def forward_checking():
 @backtracking_routes_bp.route('/backtracking')
 def backtracking():
     return render_template('backtracking.html')
+@ac_3_routes_bp.route('/ac3')
+def ac_3():
+    return render_template('ac-3.html')

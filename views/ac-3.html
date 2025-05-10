@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng AC-3 CSP - 8-Puzzle</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; display: flex; gap: 20px; }
+        .puzzle-container, .info-panel {
+            background: white; padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1;
+        }
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 240px;
+            margin: 20px auto;
+        }
+        .puzzle-cell-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 6px 0;
+            min-height: 80px;
+        }
+        .puzzle-select { width: 60px; height: 60px; font-size: 24px; text-align: center; border-radius: 4px; border: 2px solid #4a90e2; background: #fff; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        button { padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:disabled { background: #cccccc; cursor: not-allowed; }
+        .success { color: #388e3c; font-weight: bold; }
+        .error { color: #d32f2f; font-weight: bold; margin-top: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <h1>Mô phỏng AC-3 CSP cho 8-Puzzle</h1>
+    <div class="container">
+        <div class="puzzle-container">
+            <h2>Nhập trạng thái 8-Puzzle (ban đầu)</h2>
+            <form id="inputForm" autocomplete="off" onsubmit="return false;">
+                <div class="puzzle-board" id="inputBoard"></div>
+            </form>
+            <div class="controls">
+                <button onclick="resetInput()" id="resetBtn">Đặt lại</button>
+            </div>
+            <div id="errorMsg" class="error"></div>
+            <div id="successMsg" class="success"></div>
+        </div>
+        <div class="info-panel">
+            <h2>Thuật toán AC-3 cho 8-Puzzle</h2>
+            <div id="ac3-domains"></div>
+            <div style="margin:12px 0;">
+                <button onclick="runAC3Step()" id="ac3StepBtn">Chạy 1 bước AC-3</button>
+                <button onclick="runAC3All()" id="ac3AllBtn">Chạy toàn bộ AC-3</button>
+                <button onclick="resetAC3()" id="ac3ResetBtn">Reset AC-3</button>
+            </div>
+            <div><b>Hàng đợi arc:</b> <span id="ac3-queue"></span></div>
+            <div><b>Log:</b></div>
+            <div id="ac3-log" style="background:#f8f9fa; border-radius:6px; padding:8px; min-height:60px; max-height:180px; overflow:auto; font-size:13px;"></div>
+        </div>
+    </div>
+    <script>
+        const N = 9;
+        let inputState = Array(N).fill(null);
+
+        function renderInputBoard() {
+            const board = document.getElementById('inputBoard');
+            board.innerHTML = '';
+            for (let i = 0; i < N; i++) {
+                const block = document.createElement('div');
+                block.className = 'puzzle-cell-block';
+                // select box
+                const select = document.createElement('select');
+                select.className = 'puzzle-select';
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = '';
+                if (inputState[i] === null) emptyOption.selected = true;
+                select.appendChild(emptyOption);
+                for (let val = 0; val < 9; val++) {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.textContent = val;
+                    if (inputState[i] === val) option.selected = true;
+                    select.appendChild(option);
+                }
+                select.onchange = (e) => handleInput(i, e.target.value === '' ? null : parseInt(e.target.value));
+                block.appendChild(select);
+                board.appendChild(block);
+            }
+        }
+
+        function handleInput(idx, value) {
+            inputState[idx] = value;
+            renderInputBoard();
+            ac3InitOnInput();
+        }
+
+        function resetInput() {
+            inputState = Array(N).fill(null);
+            renderInputBoard();
+            document.getElementById('errorMsg').textContent = '';
+            document.getElementById('successMsg').textContent = '';
+            ac3InitOnInput();
+        }
+
+        // --- AC-3 cho 8-puzzle ---
+        let ac3Domains = null;
+        let ac3Queue = null;
+        let ac3Log = [];
+        let ac3Finished = false;
+
+        function initAC3Domains() {
+            ac3Domains = [];
+            let used = new Set();
+            for (let i = 0; i < N; i++) if (inputState[i] !== null) used.add(inputState[i]);
+            for (let i = 0; i < N; i++) {
+                if (inputState[i] !== null) ac3Domains[i] = [inputState[i]];
+                else ac3Domains[i] = Array.from({length:9}, (_,x)=>x).filter(x=>!used.has(x));
+            }
+        }
+
+        function getNeighbors(idx) {
+            let neighbors = [];
+            let row = Math.floor(idx/3), col = idx%3;
+            for (let i = 0; i < 3; i++) {
+                let r = row*3 + i;
+                if (r !== idx) neighbors.push(r);
+                let c = i*3 + col;
+                if (c !== idx) neighbors.push(c);
+            }
+            return Array.from(new Set(neighbors));
+        }
+
+        function initAC3Queue() {
+            ac3Queue = [];
+            for (let xi = 0; xi < N; xi++) {
+                let neighbors = getNeighbors(xi);
+                for (let xj of neighbors) {
+                    ac3Queue.push([xi, xj]);
+                }
+            }
+        }
+
+        function renderAC3Domains() {
+            let html = '<table style="border-collapse:collapse; margin-bottom:8px;">';
+            for (let i = 0; i < 3; i++) {
+                html += '<tr>';
+                for (let j = 0; j < 3; j++) {
+                    let idx = i*3+j;
+                    html += `<td style='border:1px solid #bbb; min-width:60px; min-height:32px; text-align:center; padding:4px; font-size:14px; background:#fff;'>${ac3Domains[idx].join(', ')}</td>`;
+                }
+                html += '</tr>';
+            }
+            html += '</table>';
+            document.getElementById('ac3-domains').innerHTML = html;
+        }
+
+        function renderAC3Queue() {
+            document.getElementById('ac3-queue').textContent = ac3Queue.map(([xi,xj])=>`(${xi+1},${xj+1})`).join(', ');
+        }
+
+        function renderAC3Log() {
+            document.getElementById('ac3-log').innerHTML = ac3Log.map(s=>`<div>${s}</div>`).join('');
+        }
+
+        function resetAC3() {
+            ac3Log = [];
+            ac3Finished = false;
+            initAC3Domains();
+            initAC3Queue();
+            renderAC3Domains();
+            renderAC3Queue();
+            renderAC3Log();
+        }
+
+        function ac3Constraint(xi, xj, vi, vj) {
+            if (vi === vj) return false;
+            if (Math.floor(xi/3) === Math.floor(xj/3) && Math.abs(xi-xj)===1) {
+                if (Math.abs(vi-vj) !== 1) return false;
+            }
+            if (xi%3 === xj%3 && Math.abs(xi-xj)===3) {
+                if (Math.abs(vi-vj) !== 3) return false;
+            }
+            return true;
+        }
+
+        function ac3Revise(xi, xj) {
+            let revised = false;
+            let newDomain = [];
+            for (let vi of ac3Domains[xi]) {
+                let ok = false;
+                for (let vj of ac3Domains[xj]) {
+                    if (ac3Constraint(xi, xj, vi, vj)) {
+                        ok = true; break;
+                    }
+                }
+                if (ok) newDomain.push(vi);
+                else {
+                    ac3Log.push(`Loại ${vi} khỏi miền của ô ${xi+1} vì không còn giá trị phù hợp với ô ${xj+1}`);
+                    revised = true;
+                }
+            }
+            ac3Domains[xi] = newDomain;
+            return revised;
+        }
+
+        function runAC3Step() {
+            if (ac3Finished) return;
+            if (!ac3Queue || ac3Queue.length === 0) {
+                ac3Log.push('<b>AC-3 kết thúc.</b>');
+                ac3Finished = true;
+                renderAC3Log();
+                return;
+            }
+            let [xi, xj] = ac3Queue.shift();
+            ac3Log.push(`Xét arc (${xi+1}, ${xj+1})`);
+            if (ac3Revise(xi, xj)) {
+                if (ac3Domains[xi].length === 0) {
+                    ac3Log.push(`<span style='color:red'><b>Miền của ô ${xi+1} rỗng! Không giải được.</b></span>`);
+                    ac3Finished = true;
+                } else {
+                    let neighbors = getNeighbors(xi).filter(xk=>xk!==xj);
+                    for (let xk of neighbors) ac3Queue.push([xk, xi]);
+                }
+            }
+            renderAC3Domains();
+            renderAC3Queue();
+            renderAC3Log();
+        }
+
+        function runAC3All() {
+            while (!ac3Finished && ac3Queue && ac3Queue.length > 0) {
+                runAC3Step();
+            }
+        }
+
+        function ac3InitOnInput() {
+            resetAC3();
+        }
+
+        window.onload = function() {
+            renderInputBoard();
+            ac3InitOnInput();
+        };
+    </script>
+</body>
+</html>
