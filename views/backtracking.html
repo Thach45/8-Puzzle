@@ -3,300 +3,325 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mô phỏng Backtracking CSP - 8-Puzzle</title>
+    <title>Mô phỏng Backtracking CSP - 8-Puzzle (Ràng buộc goal)</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .container { max-width: 1200px; margin: 0 auto; display: flex; gap: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; display: flex; gap: 20px; }
         .puzzle-container, .info-panel {
             background: white; padding: 20px; border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1;
         }
-        .puzzle-board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; width: 300px; height: 300px; margin: 20px auto; }
-        .puzzle-cell {
-            background: #4a90e2; color: white; display: flex; align-items: center; justify-content: center;
-            font-size: 24px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background-color 0.3s;
+        .constraint-box {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            border-radius: 6px;
+            padding: 12px 18px;
+            margin-bottom: 18px;
+            color: #15417e;
         }
-        .puzzle-cell.empty { background: #e9ecef; color: #4a90e2; }
+        .constraint-box ul { margin: 8px 0 0 18px; }
+        .puzzle-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            width: 240px;
+            margin: 20px auto;
+        }
+        .puzzle-cell-block {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 6px 0;
+            min-height: 80px;
+        }
+        .puzzle-select { width: 60px; height: 60px; font-size: 24px; text-align: center; border-radius: 4px; border: 2px solid #4a90e2; background: #fff; }
         .controls { margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         button { padding: 10px 20px; background: #4a90e2; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
         button:disabled { background: #cccccc; cursor: not-allowed; }
-        .step-list { margin-top: 20px; max-height: 250px; overflow-y: auto; }
-        .step-item { padding: 10px; border-bottom: 1px solid #eee; }
-        .highlight { background: #fff3cd; }
-        h1, h2 { text-align: center; color: #2c3e50; }
-        .domain-list { margin: 10px 0; }
-        .domain-list span { display: inline-block; margin-right: 8px; }
-        .backtrack { color: #d32f2f; font-weight: bold; }
         .success { color: #388e3c; font-weight: bold; }
-        .visited-section { margin-top: 20px; }
-        .visited-title { font-weight: bold; margin-bottom: 8px; }
-        .visited-list { display: flex; flex-wrap: wrap; gap: 10px; max-height: 200px; overflow-y: auto; }
-        .visited-matrix { border: 1px solid #bbb; border-radius: 4px; padding: 4px; background: #f8f9fa; }
-        .visited-matrix-row { display: flex; }
-        .visited-matrix-cell { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin: 1px; background: #fff; border-radius: 2px; }
-        .solution-section { margin-top: 20px; }
-        .solution-title { font-weight: bold; margin-bottom: 8px; }
-        .solution-path { display: flex; flex-wrap: wrap; gap: 10px; }
-        .solution-matrix { border: 2px solid #388e3c; border-radius: 4px; padding: 4px; background: #e8f5e9; }
-        .solution-matrix-row { display: flex; }
-        .solution-matrix-cell { width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 15px; margin: 1px; background: #fff; border-radius: 2px; }
+        .backtrack { color: #d32f2f; font-weight: bold; }
+        .error { color: #d32f2f; font-weight: bold; margin-top: 10px; text-align: center; }
+        #tree-simple {
+            background: #fff;
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 400px;
+            overflow: auto;
+        }
+        .backtrack .node {
+            background: #ffeaea !important;
+            border: 2px solid #d32f2f !important;
+        }
     </style>
+    <!-- Treant.js CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/Treant.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/vendor/perfect-scrollbar/perfect-scrollbar.min.css">
+
+    <!-- Treant.js JS và dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/raphael/2.3.0/raphael.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/vendor/perfect-scrollbar/perfect-scrollbar.jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/treant-js/1.0/Treant.min.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-    <h1>Mô phỏng Backtracking CSP cho 8-Puzzle</h1>
+    <h1>Mô phỏng Backtracking CSP cho 8-Puzzle (Ràng buộc goal)</h1>
     <div class="container">
         <div class="puzzle-container">
-            <h2>Bảng 8-Puzzle</h2>
-            <div class="puzzle-board" id="puzzleBoard"></div>
-            <div class="controls">
-                <button onclick="shufflePuzzle()" id="shuffleBtn">Tạo trạng thái ngẫu nhiên</button>
-                <button onclick="startSolving()" id="startBtn">Bắt đầu giải</button>
-                <button onclick="nextStep()" id="nextBtn" disabled>Bước tiếp theo</button>
-                <button onclick="resetPuzzle()" id="resetBtn">Đặt lại</button>
+            <h2>Nhập trạng thái 8-Puzzle (theo ràng buộc goal)</h2>
+            <div class="constraint-box">
+                <b>Ràng buộc CSP cho trạng thái goal:</b>
+                <ul>
+                    <li><b>Không trùng lặp:</b> Mỗi số từ 0 đến 8 chỉ xuất hiện một lần.</li>
+                    <li><b>Ràng buộc liên tiếp (theo hàng):</b> Hai ô liên tiếp trên cùng một hàng phải chênh lệch đúng 1.<br>
+                        <span style="color:#1976d2;">Ví dụ: 2 - 1 = 1, 3 - 2 = 1, 5 - 4 = 1, ...</span></li>
+                    <li><b>Ràng buộc theo cột:</b> Hai ô cùng cột liền kề phải chênh lệch đúng 3.<br>
+                        <span style="color:#1976d2;">Ví dụ: 4 - 1 = 3, 5 - 2 = 3, 7 - 4 = 3, ...</span></li>
+                </ul>
             </div>
+            <form id="inputForm" autocomplete="off" onsubmit="return false;">
+                <div class="puzzle-board" id="inputBoard"></div>
+            </form>
+            <div class="controls">
+                <button onclick="checkValid()" id="checkBtn">Kiểm tra hợp lệ</button>
+                <button onclick="resetInput()" id="resetBtn">Đặt lại</button>
+            </div>
+            <div id="errorMsg" class="error"></div>
+            <div id="successMsg" class="success"></div>
         </div>
         <div class="info-panel">
-            <h2>Quá trình giải Backtracking CSP</h2>
-            <div id="domainInfo"></div>
-            <div class="step-list" id="stepList"></div>
-            <div class="visited-section">
-                <div class="visited-title">Các trạng thái đã thăm:</div>
-                <div class="visited-list" id="visitedList"></div>
-            </div>
-            <div class="solution-section" id="solutionSection" style="display:none;">
-                <div class="solution-title" id="solutionTitle"></div>
-                <div class="solution-path" id="solutionPath"></div>
-            </div>
+            <h2>Cây Backtracking</h2>
+            <div id="tree-html" style="width:100%; min-height:400px;"></div>
         </div>
     </div>
     <script>
+        const N = 9;
         const goalState = [1,2,3,4,5,6,7,8,0];
-        let currentState = [...goalState];
-        let solving = false;
-        let stack = [];
-        let visited = new Set();
-        let visitedArr = [];
-        let path = [];
-        let solution = null;
+        let inputState = Array(N).fill(null);
+        // Tree history for Treant.js
+        let treeHistory = [
+            { id: 0, parent: null, state: Array(N).fill(null), label: "Bắt đầu" }
+        ];
+        let currentNodeId = 0;
 
-        function renderPuzzle(state = currentState) {
-            const board = document.getElementById('puzzleBoard');
+        // --- Cây backtracking dạng cây thực sự ---
+        function createNode(state, label, parent = null) {
+            return {
+                state: [...state],
+                label,
+                parent,
+                children: []
+            };
+        }
+        let treeRoot = createNode(Array(N).fill(null), "Bắt đầu");
+        let currentNode = treeRoot;
+
+        function resetTree() {
+            treeRoot = createNode(Array(N).fill(null), "Bắt đầu");
+            currentNode = treeRoot;
+            renderTree();
+        }
+
+        function addTreeChildNode(newState, label, isBacktrack = false) {
+            const node = createNode(newState, label, currentNode);
+            if (isBacktrack) node.isBacktrack = true;
+            currentNode.children.push(node);
+            if (!isBacktrack) currentNode = node;
+            renderTree();
+        }
+
+        function renderTree() {
+            // Duyệt cây theo tầng để render
+            let levels = [];
+            let queue = [{ node: treeRoot, level: 0 }];
+            while (queue.length) {
+                let { node, level } = queue.shift();
+                if (!levels[level]) levels[level] = [];
+                levels[level].push(node);
+                node.children.forEach(child => queue.push({ node: child, level: level + 1 }));
+            }
+            // Render HTML
+            let html = '';
+            for (let i = 0; i < levels.length; i++) {
+                html += '<div class="tree-level" style="display:flex; justify-content:center; align-items:flex-start; margin: 18px 0; position:relative;">';
+                for (let node of levels[i]) {
+                    let isBacktrack = node.isBacktrack;
+                    html += `<div class="tree-node${isBacktrack ? ' backtrack-node' : ''}" style="min-width:70px; margin:0 18px; padding:8px 6px; border-radius:8px; border:2px solid ${isBacktrack ? '#d32f2f' : '#4a90e2'}; background:${isBacktrack ? '#ffeaea' : '#fff'}; text-align:center; position:relative; display:flex; flex-direction:column; align-items:center;">
+                        <div style="font-weight:bold; color:${isBacktrack ? '#d32f2f' : '#1976d2'}; font-size:13px; margin-bottom:2px;">${node.label}</div>
+                        <table style='border-collapse:collapse;'>
+                            <tbody>
+                                <tr>${[0,1,2].map(j=>`<td style='width:18px;height:18px;border:1px solid #bbb; font-size:12px; text-align:center;'>${node.state[j]===null?'':node.state[j]}</td>`).join('')}</tr>
+                                <tr>${[3,4,5].map(j=>`<td style='width:18px;height:18px;border:1px solid #bbb; font-size:12px; text-align:center;'>${node.state[j]===null?'':node.state[j]}</td>`).join('')}</tr>
+                                <tr>${[6,7,8].map(j=>`<td style='width:18px;height:18px;border:1px solid #bbb; font-size:12px; text-align:center;'>${node.state[j]===null?'':node.state[j]}</td>`).join('')}</tr>
+                            </tbody>
+                        </table>
+                    </div>`;
+                }
+                html += '</div>';
+            }
+            // Vẽ nhánh nối cha-con
+            setTimeout(() => {
+                let allNodes = document.querySelectorAll('.tree-node');
+                let container = document.getElementById('tree-html');
+                let svg = document.getElementById('tree-html-svg');
+                if (svg) svg.remove();
+                svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('id', 'tree-html-svg');
+                svg.style.position = 'absolute';
+                svg.style.left = '0';
+                svg.style.top = '0';
+                svg.style.width = '100%';
+                svg.style.height = container.scrollHeight + 'px';
+                svg.style.pointerEvents = 'none';
+                container.style.position = 'relative';
+                // Map node to DOM
+                let domMap = new Map();
+                let idx = 0;
+                // Duyệt lại theo tầng để map node -> dom
+                let flatNodes = [];
+                for (let i = 0; i < levels.length; i++) for (let n of levels[i]) flatNodes.push(n);
+                flatNodes.forEach((n, i) => {
+                    let dom = allNodes[i];
+                    if (dom) domMap.set(n, dom);
+                });
+                // Vẽ line
+                flatNodes.forEach(n => {
+                    if (n.parent && domMap.has(n) && domMap.has(n.parent)) {
+                        let from = domMap.get(n.parent).getBoundingClientRect();
+                        let to = domMap.get(n).getBoundingClientRect();
+                        let cRect = container.getBoundingClientRect();
+                        let x1 = from.left + from.width/2 - cRect.left;
+                        let y1 = from.bottom - cRect.top;
+                        let x2 = to.left + to.width/2 - cRect.left;
+                        let y2 = to.top - cRect.top;
+                        let line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', x1);
+                        line.setAttribute('y1', y1);
+                        line.setAttribute('x2', x2);
+                        line.setAttribute('y2', y2);
+                        line.setAttribute('stroke', '#888');
+                        line.setAttribute('stroke-width', '2');
+                        svg.appendChild(line);
+                    }
+                });
+                container.appendChild(svg);
+            }, 0);
+            document.getElementById('tree-html').innerHTML = html;
+        }
+
+        function renderInputBoard() {
+            const board = document.getElementById('inputBoard');
             board.innerHTML = '';
-            state.forEach((value, idx) => {
-                const cell = document.createElement('div');
-                cell.className = `puzzle-cell${value === 0 ? ' empty' : ''}`;
-                cell.textContent = value === 0 ? '' : value;
-                board.appendChild(cell);
-            });
-        }
-
-        function shufflePuzzle() {
-            do {
-                currentState = [...goalState];
-                for (let i = currentState.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [currentState[i], currentState[j]] = [currentState[j], currentState[i]];
+            for (let i = 0; i < N; i++) {
+                const block = document.createElement('div');
+                block.className = 'puzzle-cell-block';
+                // select box
+                const select = document.createElement('select');
+                select.className = 'puzzle-select';
+                // Tạo option cho các giá trị có thể
+                const emptyOption = document.createElement('option');
+                emptyOption.value = '';
+                emptyOption.textContent = '';
+                if (inputState[i] === null) emptyOption.selected = true;
+                select.appendChild(emptyOption);
+                // Thêm các giá trị từ 0-8
+                for (let val = 0; val < 9; val++) {
+                    const option = document.createElement('option');
+                    option.value = val;
+                    option.textContent = val;
+                    if (inputState[i] === val) option.selected = true;
+                    select.appendChild(option);
                 }
-            } while (!isSolvable(currentState));
-            renderPuzzle();
-            resetInfo();
-            addStep('Đã tạo trạng thái ngẫu nhiên mới.');
-        }
-
-        function isSolvable(state) {
-            let inv = 0;
-            const arr = state.filter(x => x !== 0);
-            for (let i = 0; i < arr.length - 1; i++)
-                for (let j = i + 1; j < arr.length; j++)
-                    if (arr[i] > arr[j]) inv++;
-            return inv % 2 === 0;
-        }
-
-        function resetPuzzle() {
-            currentState = [...goalState];
-            solving = false;
-            stack = [];
-            visited = new Set();
-            visitedArr = [];
-            path = [];
-            solution = null;
-            renderPuzzle();
-            resetInfo();
-            addStep('Đã đặt lại puzzle về trạng thái ban đầu.');
-        }
-
-        function resetInfo() {
-            document.getElementById('domainInfo').innerHTML = '';
-            document.getElementById('stepList').innerHTML = '';
-            document.getElementById('nextBtn').disabled = true;
-            document.getElementById('startBtn').disabled = false;
-            document.getElementById('shuffleBtn').disabled = false;
-            document.getElementById('visitedList').innerHTML = '';
-            document.getElementById('solutionSection').style.display = 'none';
-        }
-
-        function addStep(text, type = '') {
-            const stepList = document.getElementById('stepList');
-            const div = document.createElement('div');
-            div.className = 'step-item' + (type ? ' ' + type : '');
-            div.innerHTML = text;
-            stepList.insertBefore(div, stepList.firstChild);
-        }
-
-        function getValidMoves(state) {
-            const empty = state.indexOf(0);
-            const moves = [];
-            const row = Math.floor(empty / 3);
-            const col = empty % 3;
-            if (row > 0) moves.push(empty - 3);
-            if (row < 2) moves.push(empty + 3);
-            if (col > 0) moves.push(empty - 1);
-            if (col < 2) moves.push(empty + 1);
-            return moves;
-        }
-
-        function showDomains(state) {
-            const empty = state.indexOf(0);
-            const moves = getValidMoves(state);
-            let html = `<div class='domain-list'><b>Các bước đi hợp lệ cho ô trống [${empty}]:</b> `;
-            html += moves.map(m => state[m]).join(', ');
-            html += '</div>';
-            document.getElementById('domainInfo').innerHTML = html;
-        }
-
-        function renderVisited() {
-            const visitedList = document.getElementById('visitedList');
-            visitedList.innerHTML = '';
-            visitedArr.forEach(stateStr => {
-                const state = stateStr.split(',').map(Number);
-                const matrix = document.createElement('div');
-                matrix.className = 'visited-matrix';
-                for (let i = 0; i < 3; i++) {
-                    const row = document.createElement('div');
-                    row.className = 'visited-matrix-row';
-                    for (let j = 0; j < 3; j++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'visited-matrix-cell';
-                        const v = state[i*3+j];
-                        cell.textContent = v === 0 ? '_' : v;
-                        row.appendChild(cell);
-                    }
-                    matrix.appendChild(row);
-                }
-                visitedList.appendChild(matrix);
-            });
-        }
-
-        function renderSolutionPath(pathArr) {
-            const section = document.getElementById('solutionSection');
-            const title = document.getElementById('solutionTitle');
-            const pathDiv = document.getElementById('solutionPath');
-            section.style.display = 'block';
-            pathDiv.innerHTML = '';
-            title.textContent = `Đường đi tới lời giải (${pathArr.length-1} bước):`;
-            pathArr.forEach(state => {
-                const matrix = document.createElement('div');
-                matrix.className = 'solution-matrix';
-                for (let i = 0; i < 3; i++) {
-                    const row = document.createElement('div');
-                    row.className = 'solution-matrix-row';
-                    for (let j = 0; j < 3; j++) {
-                        const cell = document.createElement('div');
-                        cell.className = 'solution-matrix-cell';
-                        const v = state[i*3+j];
-                        cell.textContent = v === 0 ? '_' : v;
-                        row.appendChild(cell);
-                    }
-                    matrix.appendChild(row);
-                }
-                pathDiv.appendChild(matrix);
-            });
-        }
-
-        function startSolving() {
-            solving = true;
-            stack = [];
-            visited = new Set();
-            visitedArr = [];
-            path = [];
-            solution = null;
-            document.getElementById('nextBtn').disabled = false;
-            document.getElementById('startBtn').disabled = true;
-            document.getElementById('shuffleBtn').disabled = true;
-            visited.add(currentState.join(','));
-            visitedArr.push(currentState.join(','));
-            stack.push({ state: [...currentState], path: [], moves: getValidMoves(currentState) });
-            showDomains(currentState);
-            renderVisited();
-            addStep('Bắt đầu giải bằng Backtracking CSP.');
-        }
-
-        function nextStep() {
-            if (!solving || stack.length === 0) {
-                addStep('<span class="backtrack">Không tìm thấy lời giải!</span>', 'backtrack');
-                document.getElementById('nextBtn').disabled = true;
-                document.getElementById('solutionSection').style.display = 'block';
-                document.getElementById('solutionTitle').textContent = 'Không tìm thấy lời giải.';
-                document.getElementById('solutionPath').innerHTML = '';
-                return;
+                select.onchange = (e) => handleInput(i, e.target.value === '' ? null : parseInt(e.target.value));
+                block.appendChild(select);
+                board.appendChild(block);
             }
-            let node = stack.pop();
-            currentState = [...node.state];
-            path = node.path;
-            renderPuzzle();
-            showDomains(currentState);
-            renderVisited();
+        }
 
-            // Đã đạt trạng thái đích
-            if (currentState.join(',') === goalState.join(',')) {
-                addStep(`<span class="success">🎉 Đã tìm thấy lời giải! Số bước: ${path.length}</span>`, 'success');
-                document.getElementById('nextBtn').disabled = true;
-                solving = false;
-                // Hiển thị đường đi lời giải
-                let solutionPath = [[...goalState]];
-                if (path.length > 0) {
-                    let tempState = [...goalState];
-                    solutionPath = [[...goalState]];
-                    for (let i = path.length - 1; i >= 0; i--) {
-                        const move = path[i];
-                        const empty = tempState.indexOf(0);
-                        [tempState[empty], tempState[move]] = [tempState[move], tempState[empty]];
-                        solutionPath.unshift([...tempState]);
-                    }
+        function handleInput(idx, value) {
+            const oldValue = inputState[idx];
+            inputState[idx] = value;
+            if (value !== null) {
+                // Kiểm tra ràng buộc
+                if (!checkGoalConstraint(idx, value, inputState)) {
+                    // Lưu lại trạng thái có giá trị vi phạm
+                    const violatedState = [...inputState];
+                    document.getElementById('errorMsg').textContent = 'Vi phạm ràng buộc! Quay lui...';
+                    // Thêm node backtrack (dead-end) với trạng thái vi phạm
+                    addTreeChildNode(violatedState, 'Quay lui', true);
+                    // Sau đó mới gỡ giá trị
+                    inputState[idx] = oldValue;
+                    setTimeout(() => {
+                        document.getElementById('errorMsg').textContent = '';
+                        renderInputBoard();
+                    }, 1500);
+                    return;
                 }
-                renderSolutionPath(solutionPath.reverse());
-                return;
             }
+            // Thêm node mới vào cây (nhánh mới)
+            addTreeChildNode(inputState, `Gán ô ${idx + 1} = ${value}`);
+            renderInputBoard();
+            checkValid();
+        }
 
-            // Nếu còn bước đi hợp lệ
-            if (node.moves.length > 0) {
-                // Chọn một bước đi (theo thứ tự)
-                const move = node.moves.shift();
-                // Đẩy lại node hiện tại với các bước còn lại
-                stack.push({ state: [...currentState], path: [...path], moves: [...node.moves] });
-                // Sinh trạng thái mới
-                const newState = [...currentState];
-                const empty = newState.indexOf(0);
-                [newState[empty], newState[move]] = [newState[move], newState[empty]];
-                // Nếu chưa thăm trạng thái này thì tiếp tục
-                if (!visited.has(newState.join(','))) {
-                    visited.add(newState.join(','));
-                    visitedArr.push(newState.join(','));
-                    const newMoves = getValidMoves(newState);
-                    stack.push({ state: newState, path: [...path, move], moves: newMoves });
-                    addStep(`Gán: di chuyển số ${currentState[move]} sang ô trống.`, '');
-                } else {
-                    addStep(`Bỏ qua trạng thái đã thăm.`, 'backtrack');
-                }
+        function checkGoalConstraint(idx, val, state) {
+            // Kiểm tra trùng lặp
+            for (let i = 0; i < N; i++) {
+                if (i !== idx && state[i] === val) return false;
+            }
+            // Kiểm tra ràng buộc hàng
+            if (idx % 3 !== 0 && state[idx-1] !== null) {
+                if (val - state[idx-1] !== 1) return false;
+            }
+            if (idx % 3 !== 2 && state[idx+1] !== null) {
+                if (state[idx+1] - val !== 1) return false;
+            }
+            // Kiểm tra ràng buộc cột
+            if (idx >= 3 && state[idx-3] !== null) {
+                if (val - state[idx-3] !== 3) return false;
+            }
+            if (idx < 6 && state[idx+3] !== null) {
+                if (state[idx+3] - val !== 3) return false;
+            }
+            return true;
+        }
+
+        function isInputFullValid() {
+            // Đủ 9 giá trị, không trùng, đủ 0-8, và thỏa mãn ràng buộc goal
+            const vals = inputState.filter(v => v !== null);
+            if (vals.length !== 9) return false;
+            const set = new Set(vals);
+            for (let i = 0; i < 9; i++) if (!set.has(i)) return false;
+            for (let i = 0; i < 9; i++) {
+                if (!checkGoalConstraint(i, inputState[i], inputState)) return false;
+            }
+            return true;
+        }
+
+        function checkValid() {
+            renderInputBoard();
+            if (isInputFullValid()) {
+                document.getElementById('successMsg').textContent = 'Trạng thái hợp lệ! Đây chính là goal.';
             } else {
-                // Không còn bước đi hợp lệ, backtrack
-                addStep(`<span class="backtrack">Backtrack: Không còn bước đi hợp lệ, quay lui.</span>`, 'backtrack');
+                document.getElementById('successMsg').textContent = '';
             }
+        }
+
+        function resetInput() {
+            inputState = Array(N).fill(null);
+            resetTree();
+            renderInputBoard();
+            document.getElementById('errorMsg').textContent = '';
+            document.getElementById('successMsg').textContent = '';
         }
 
         window.onload = function() {
-            renderPuzzle();
-            resetInfo();
+            renderInputBoard();
+            document.getElementById('errorMsg').textContent = '';
+            document.getElementById('successMsg').textContent = '';
+            resetTree();
         };
     </script>
 </body>
