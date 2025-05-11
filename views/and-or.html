@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>8-Puzzle AND-OR Tree Simulation</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f6f8fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #0001;
+      padding: 32px 32px 24px 32px;
+    }
+    h2 {
+      color: #1a237e;
+      margin-top: 0;
+    }
+    .puzzle {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-gap: 4px;
+      margin-bottom: 20px;
+    }
+    .tile {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e3eafc;
+      border: 2px solid #90caf9;
+      border-radius: 8px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #1a237e;
+      box-shadow: 0 1px 3px #0002;
+      transition: background 0.2s;
+    }
+    .tile.blank {
+      background: #fff;
+      border: 2px dashed #bdbdbd;
+      color: #bdbdbd;
+    }
+    .btn {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 22px;
+      font-size: 17px;
+      font-weight: 500;
+      margin-right: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      box-shadow: 0 1px 4px #0001;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #0d47a1;
+    }
+    #result {
+      margin: 18px 0 10px 0;
+      font-size: 17px;
+      color: #333;
+    }
+    .tree-scroll {
+      overflow-x: auto;
+      background: #f3f6fa;
+      border-radius: 8px;
+      border: 1.5px solid #e3eafc;
+      padding: 10px 0 10px 0;
+      margin-bottom: 10px;
+    }
+    .legend {
+      margin: 10px 0 18px 0;
+      font-size: 15px;
+      color: #555;
+    }
+    .legend span {
+      display: inline-block;
+      margin-right: 18px;
+      padding: 2px 10px;
+      border-radius: 5px;
+      font-weight: 500;
+    }
+    .goal { background: #c8e6c9; color: #256029; }
+    .loop { background: #ffcdd2; color: #b71c1c; }
+    .limit { background: #ffe082; color: #bfa600; }
+    .tree-info {
+      background: #f3f6fa;
+      border: 1.5px solid #e3eafc;
+      border-radius: 8px;
+      padding: 15px 20px;
+      margin: 15px 0;
+      font-size: 15px;
+      color: #333;
+      line-height: 1.5;
+    }
+    .tree-info h3 {
+      color: #1976d2;
+      margin: 0 0 10px 0;
+      font-size: 16px;
+    }
+    .tree-info ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .tree-info li {
+      margin: 5px 0;
+    }
+    .node-type {
+      font-weight: bold;
+      color: #1976d2;
+    }
+    .node-type.and {
+      color: #43a047;
+    }
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .depth-input {
+      width: 60px;
+      padding: 8px;
+      font-size: 16px;
+      border: 2px solid #90caf9;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .depth-input:focus {
+      outline: none;
+      border-color: #1976d2;
+    }
+    .error-msg {
+      color: #d32f2f;
+      font-size: 14px;
+      margin-top: 5px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>8-Puzzle: Mô phỏng AND-OR Search trong môi trường không xác định</h2>
+    <div id="current-state"></div>
+    <div class="input-group">
+      <label for="depth-input">Độ sâu:</label>
+      <input type="number" id="depth-input" class="depth-input" min="1" max="10" value="1">
+      <button class="btn" onclick="showTree()">Hiển thị cây AND-OR</button>
+    </div>
+    <div id="error-msg" class="error-msg">Vui lòng nhập độ sâu từ 1 đến 10</div>
+    <div class="legend">
+      <span class="goal">Goal</span>
+      <span class="loop">Lặp</span>
+      <span class="limit">Giới hạn độ sâu</span>
+      <span id="depth-info" style="background: #e3f2fd; color: #1976d2;">Độ sâu hiện tại: 1</span>
+    </div>
+    
+
+    <div id="result"></div>
+    <div class="tree-scroll">
+      <svg id="tree" width="1800" height="600"></svg>
+    </div>
+  </div>
+
+  <script>
+    // Trạng thái ban đầu
+    let state = [1,2,3,4,5,6,7,8,0]; // 0 là ô trống
+    function drawPuzzle(container, arr) {
+      container.innerHTML = '';
+      arr.forEach((v, i) => {
+        const div = document.createElement('div');
+        div.className = 'tile' + (v === 0 ? ' blank' : '');
+        div.textContent = v === 0 ? '' : v;
+        container.appendChild(div);
+      });
+    }
+    // Hiển thị trạng thái hiện tại
+    const currentStateDiv = document.createElement('div');
+    currentStateDiv.className = 'puzzle';
+    document.getElementById('current-state').appendChild(currentStateDiv);
+    drawPuzzle(currentStateDiv, state);
+
+    // Trạng thái ban đầu cho giải bài toán
+    let startState = [1,2,3,4,5,6,7,0,8];
+    let goalState = [1,2,3,4,5,6,7,8,0];
+
+    // Hàm so sánh hai trạng thái
+    function isGoal(state) {
+      return state.every((v,i) => v === goalState[i]);
+    }
+    function stateToStr(state) {
+      return state.join(',');
+    }
+
+    // Các hành động có thể
+    const actions = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+
+    // Hàm tạo bản sao sâu của một trạng thái
+    function deepCopyState(state) {
+      return state.slice();
+    }
+
+    function getPossibleStates(state, action) {
+      const blank = state.indexOf(0);
+      let results = [];
+      
+      // 1. Thực hiện action chính
+      let s1 = deepCopyState(state);
+      let moved = false;
+      if (action === 'UP' && blank > 2) {
+        [s1[blank], s1[blank-3]] = [s1[blank-3], s1[blank]];
+        moved = true;
+      } else if (action === 'DOWN' && blank < 6) {
+        [s1[blank], s1[blank+3]] = [s1[blank+3], s1[blank]];
+        moved = true;
+      } else if (action === 'LEFT' && blank%3 !== 0) {
+        [s1[blank], s1[blank-1]] = [s1[blank-1], s1[blank]];
+        moved = true;
+      } else if (action === 'RIGHT' && blank%3 !== 2) {
+        [s1[blank], s1[blank+1]] = [s1[blank+1], s1[blank]];
+        moved = true;
+      }
+      if (moved) results.push(s1);
+
+      // 2. Random một action phụ từ các action còn lại
+      let possibleActions = actions.filter(a => a !== action);
+      let randomAction = possibleActions[Math.floor(Math.random() * possibleActions.length)];
+      let s2 = deepCopyState(state);
+      moved = false;
+      
+      if (randomAction === 'UP' && blank > 2) {
+        [s2[blank], s2[blank-3]] = [s2[blank-3], s2[blank]];
+        moved = true;
+      } else if (randomAction === 'DOWN' && blank < 6) {
+        [s2[blank], s2[blank+3]] = [s2[blank+3], s2[blank]];
+        moved = true;
+      } else if (randomAction === 'LEFT' && blank%3 !== 0) {
+        [s2[blank], s2[blank-1]] = [s2[blank-1], s2[blank]];
+        moved = true;
+      } else if (randomAction === 'RIGHT' && blank%3 !== 2) {
+        [s2[blank], s2[blank+1]] = [s2[blank+1], s2[blank]];
+        moved = true;
+      }
+      if (moved) results.push(s2);
+
+      // 3. Không di chuyển (hành động thất bại)
+      results.push(deepCopyState(state));
+
+      // Loại trùng và đảm bảo mỗi trạng thái là độc lập
+      let seen = {};
+      return results.filter(s => {
+        let key = stateToStr(s);
+        if (seen[key]) return false;
+        seen[key] = true;
+        return true;
+      });
+    }
+
+    // And-Or Search (giới hạn depth)
+    function andOrSearch(state, depth, maxDepth, path) {
+      // Tạo bản sao của trạng thái và path để tránh ảnh hưởng qua lại
+      state = deepCopyState(state);
+      path = new Set(path);
+
+      if (isGoal(state)) return {type: 'GOAL', state: state};
+      if (depth >= maxDepth) return {type: 'DEPTH_LIMIT', state: state};
+
+      let children = [];
+      for (let action of actions) {
+        let nextStates = getPossibleStates(state, action);
+        let andChildren = [];
+        for (let ns of nextStates) {
+          if (path.has(stateToStr(ns))) {
+            andChildren.push({type: 'LOOP', state: deepCopyState(ns)});
+          } else {
+            let newPath = new Set(path);
+            newPath.add(stateToStr(ns));
+            andChildren.push(andOrSearch(ns, depth+1, maxDepth, newPath));
+          }
+        }
+        children.push({action, andChildren});
+      }
+      return {type: 'OR', state: state, children};
+    }
+
+    // Vẽ cây AND-OR với layout tối ưu
+    function drawAndOrTree(rootNode) {
+      const svg = document.getElementById('tree');
+      svg.innerHTML = '';
+
+      // Các thông số cơ bản
+      const config = {
+        nodeWidth: 100,        // Chiều rộng của mỗi node
+        nodeHeight: 100,       // Chiều cao của mỗi node
+        levelHeight: 180,      // Khoảng cách giữa các tầng
+        nodePadding: 60,       // Padding giữa các node
+        svgPadding: 50,        // Padding của SVG
+        actionHeight: 50,      // Chiều cao cho action text
+        minWidth: 1800        // Chiều rộng tối thiểu của SVG
+      };
+
+      // Bước 1: Tính toán kích thước cho từng node và subtree
+      function calculateLayout(node, level = 0) {
+        if (!node) return { width: 0, height: 0, maxDepth: level };
+
+        node.level = level;
+        
+        if (node.type !== 'OR' || !node.children || node.children.length === 0) {
+          node.width = config.nodeWidth;
+          node.height = config.nodeHeight;
+          return { width: config.nodeWidth, height: config.nodeHeight, maxDepth: level };
+        }
+
+        let totalWidth = 0;
+        let maxChildDepth = level;
+        
+        // Tính layout cho các nhánh OR
+        node.children.forEach(child => {
+          child.andWidth = 0;
+          child.maxAndDepth = level + 1;
+          
+          // Tính layout cho các nhánh AND
+          child.andChildren.forEach(andChild => {
+            let andLayout = calculateLayout(andChild, level + 2);
+            child.andWidth += andLayout.width + config.nodePadding;
+            child.maxAndDepth = Math.max(child.maxAndDepth, andLayout.maxDepth);
+            maxChildDepth = Math.max(maxChildDepth, andLayout.maxDepth);
+          });
+          
+          // Đảm bảo mỗi nhánh AND có khoảng cách tối thiểu
+          if (child.andChildren.length > 0) {
+            child.andWidth = Math.max(child.andWidth, config.nodeWidth * child.andChildren.length + config.nodePadding * (child.andChildren.length - 1));
+          } else {
+            child.andWidth = config.nodeWidth;
+          }
+          
+          totalWidth += child.andWidth + config.nodePadding;
+        });
+
+        // Đảm bảo node cha đủ rộng cho các con
+        node.width = Math.max(totalWidth - config.nodePadding, config.nodeWidth);
+        node.height = config.nodeHeight;
+
+        return { 
+          width: node.width, 
+          height: node.height, 
+          maxDepth: maxChildDepth 
+        };
+      }
+
+      // Bước 2: Gán tọa độ cho từng node
+      function assignCoordinates(node, left = 0) {
+        if (!node) return;
+
+        const y = node.level * (config.levelHeight + config.actionHeight);
+        const x = left + (node.width - config.nodeWidth) / 2;
+
+        node.x = x;
+        node.y = y;
+
+        if (node.type === 'OR' && node.children) {
+          let currentX = left;
+          node.children.forEach(child => {
+            // Vị trí cho action text
+            child.actionX = currentX + child.andWidth / 2;
+            child.actionY = y + config.levelHeight;
+
+            if (child.andChildren.length > 0) {
+              let andX = currentX;
+              const andSpace = child.andWidth / child.andChildren.length;
+              
+              child.andChildren.forEach(andChild => {
+                const centerX = andX + andSpace / 2;
+                assignCoordinates(andChild, centerX - config.nodeWidth / 2);
+                andX += andSpace;
+              });
+            }
+            currentX += child.andWidth + config.nodePadding;
+          });
+        }
+      }
+
+      // Bước 3: Vẽ cây
+      function drawTree(node) {
+        if (!node) return;
+
+        // Vẽ node
+        let highlight = '';
+        if (node.type === 'GOAL') highlight = 'goal';
+        else if (node.type === 'LOOP') highlight = 'loop';
+        else if (node.type === 'DEPTH_LIMIT') highlight = 'limit';
+        
+        drawPuzzleSVG(svg, node.state, node.x, node.y, highlight);
+
+        // Vẽ label cho node
+        if (node.type === 'OR') {
+          svg.innerHTML += `
+            <text 
+              x="${node.x + config.nodeWidth/2}" 
+              y="${node.y - 10}"
+              text-anchor="middle"
+              font-size="14"
+              fill="#1976d2"
+              font-weight="bold"
+            >OR-Node</text>
+          `;
+        }
+
+        // Vẽ label cho các trạng thái đặc biệt
+        if (node.type === 'GOAL' || node.type === 'LOOP' || node.type === 'DEPTH_LIMIT') {
+          let color = node.type === 'GOAL' ? '#256029' : 
+                     node.type === 'LOOP' ? '#b71c1c' : '#bfa600';
+          let text = node.type === 'GOAL' ? 'GOAL' :
+                    node.type === 'LOOP' ? 'Lặp' : 'Giới hạn';
+          svg.innerHTML += `
+            <text 
+              x="${node.x + config.nodeWidth/2}" 
+              y="${node.y + config.nodeHeight + 20}"
+              text-anchor="middle"
+              font-size="15"
+              fill="${color}"
+              font-weight="${node.type === 'GOAL' ? 'bold' : 'normal'}"
+            >${text}</text>
+          `;
+        }
+
+        if (node.type === 'OR' && node.children) {
+          node.children.forEach(child => {
+            // Vẽ đường nối OR
+            svg.innerHTML += `
+              <line 
+                x1="${node.x + config.nodeWidth/2}" 
+                y1="${node.y + config.nodeHeight}" 
+                x2="${child.actionX}"
+                y2="${child.actionY}"
+                stroke="#888"
+                stroke-width="2"
+              />
+            `;
+
+            // Vẽ action text và AND label
+            svg.innerHTML += `
+              <text 
+                x="${child.actionX}"
+                y="${child.actionY - 25}"
+                text-anchor="middle"
+                font-size="14"
+                fill="#43a047"
+                font-weight="bold"
+              >AND-Node</text>
+              <text 
+                x="${child.actionX}"
+                y="${child.actionY - 10}"
+                text-anchor="middle"
+                font-size="14"
+                fill="#1976d2"
+              >${child.action}</text>
+            `;
+
+            // Vẽ các nhánh AND
+            child.andChildren.forEach(andChild => {
+              // Vẽ đường nối AND
+              svg.innerHTML += `
+                <line 
+                  x1="${child.actionX}"
+                  y1="${child.actionY + 20}"
+                  x2="${andChild.x + config.nodeWidth/2}"
+                  y2="${andChild.y}"
+                  stroke="#43a047"
+                  stroke-width="2"
+                  stroke-dasharray="4"
+                />
+              `;
+              drawTree(andChild);
+            });
+          });
+        }
+      }
+
+      // Thực thi
+      let layout = calculateLayout(rootNode);
+      let totalWidth = Math.max(config.minWidth, layout.width + 2 * config.svgPadding);
+      let totalHeight = (layout.maxDepth + 1) * (config.levelHeight + config.actionHeight) + config.svgPadding;
+
+      // Cập nhật kích thước SVG
+      svg.setAttribute('width', totalWidth);
+      svg.setAttribute('height', totalHeight);
+
+      // Gán tọa độ và vẽ từ giữa SVG
+      assignCoordinates(rootNode, (totalWidth - layout.width) / 2);
+      drawTree(rootNode);
+    }
+
+    // Thay thế hàm nextStep bằng showTree
+    function showTree() {
+      const depthInput = document.getElementById('depth-input');
+      const errorMsg = document.getElementById('error-msg');
+      const depth = parseInt(depthInput.value);
+
+      // Validate input
+      if (isNaN(depth) || depth < 1 || depth > 10) {
+        errorMsg.style.display = 'block';
+        return;
+      }
+      errorMsg.style.display = 'none';
+
+      // Tạo bản sao của trạng thái ban đầu
+      let currentState = deepCopyState(startState);
+      drawPuzzle(currentStateDiv, currentState);
+      document.getElementById('result').innerHTML = `<b>Đang tạo cây AND-OR với độ sâu ${depth}...</b>`;
+      document.getElementById('depth-info').textContent = `Độ sâu hiện tại: ${depth}`;
+      
+      setTimeout(() => {
+        let tree = andOrSearch(currentState, 0, depth, new Set([stateToStr(currentState)]));
+        drawAndOrTree(tree);
+        document.getElementById('result').innerHTML = `<b>Cây AND-OR với độ sâu ${depth}</b>`;
+      }, 100);
+    }
+
+    // Khi load trang
+    window.onload = function() {
+      drawPuzzle(currentStateDiv, deepCopyState(startState));
+      document.getElementById('result').innerHTML = '<b>Nhập độ sâu và nhấn "Hiển thị cây AND-OR" để bắt đầu.</b>';
+      document.getElementById('depth-info').textContent = 'Độ sâu hiện tại: 1';
+      document.getElementById('tree').innerHTML = '';
+    }
+
+    // Thêm xử lý khi nhập input
+    document.getElementById('depth-input').addEventListener('input', function() {
+      const errorMsg = document.getElementById('error-msg');
+      const depth = parseInt(this.value);
+      if (isNaN(depth) || depth < 1 || depth > 10) {
+        errorMsg.style.display = 'block';
+      } else {
+        errorMsg.style.display = 'none';
+      }
+    });
+
+    // Vẽ một trạng thái puzzle lên SVG tại (x, y), highlight nếu có
+    function drawPuzzleSVG(svg, arr, x, y, highlight) {
+      for (let i=0; i<9; ++i) {
+        const val = arr[i];
+        const row = Math.floor(i/3), col = i%3;
+        let fill = val===0?'#fff':'#e3eafc';
+        let stroke = '#90caf9';
+        if (highlight==='goal') fill = '#c8e6c9';
+        if (highlight==='loop') fill = '#ffcdd2';
+        if (highlight==='limit') fill = '#ffe082';
+        svg.innerHTML += `<rect x="${x+col*30}" y="${y+row*30}" width="28" height="28" rx="7" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+        if (val !== 0) {
+          svg.innerHTML += `<text x="${x+col*30+14}" y="${y+row*30+21}" text-anchor="middle" font-size="18" font-weight="bold" fill="#1a237e">${val}</text>`;
+        }
+      }
+    }
+  </script>
+</body>
+</html>

@@ -79,13 +79,14 @@ def simulated_annealing():
 def stochastic_hill_climbing():
     return stochastic_hill_climbing_controller()
 
-@and_or_routes_bp.route('/and-or')
-def and_or():
-    return andor_controller()
+# @and_or_routes_bp.route('/and-or')
+# def and_or():
+#     return andor_controller()
 
-@and_or_routes_bp.route('/and-or-tree')
+@and_or_routes_bp.route('/and-or')
 def and_or_tree():
-    return andor_controller()
+    # return andor_controller()
+    return render_template('and-or.html')
 
 @no_observation_routes_bp.route('/no-observation')
 def no_observation():
