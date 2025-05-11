@@ -26,6 +26,7 @@ no_observation_routes_bp = Blueprint('no_observation_routes', __name__)
 partial_observation_routes_bp = Blueprint('partial_observation_routes', __name__)
 forward_checking_routes_bp = Blueprint('forward_checking_routes', __name__)
 ac_3_routes_bp = Blueprint('ac_3_routes', __name__)
+q_learning_routes_bp = Blueprint('q_learning_routes', __name__)
 
 @home_routes_bp.route('/')
 def home():
@@ -105,3 +106,6 @@ def backtracking():
 @ac_3_routes_bp.route('/ac3')
 def ac_3():
     return render_template('ac-3.html')
+@q_learning_routes_bp.route('/q-learning')
+def q_learning():
+    return render_template('q-learning.html')

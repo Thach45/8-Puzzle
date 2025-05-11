@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>8-Puzzle Q-Learning Simulation</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f6f8fa;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px #0001;
+      padding: 32px;
+    }
+    h2 {
+      color: #1a237e;
+      margin-top: 0;
+    }
+    .puzzle {
+      display: grid;
+      grid-template-columns: repeat(3, 60px);
+      grid-gap: 4px;
+      margin-bottom: 20px;
+    }
+    .tile {
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #e3eafc;
+      border: 2px solid #90caf9;
+      border-radius: 8px;
+      font-size: 28px;
+      font-weight: bold;
+      color: #1a237e;
+      box-shadow: 0 1px 3px #0002;
+      transition: background 0.2s;
+    }
+    .tile.blank {
+      background: #fff;
+      border: 2px dashed #bdbdbd;
+      color: #bdbdbd;
+    }
+    .btn {
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 10px 22px;
+      font-size: 17px;
+      font-weight: 500;
+      margin-right: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      box-shadow: 0 1px 4px #0001;
+      transition: background 0.2s;
+    }
+    .btn:hover {
+      background: #0d47a1;
+    }
+    .btn:disabled {
+      background: #bdbdbd;
+      cursor: not-allowed;
+    }
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .param-input {
+      width: 80px;
+      padding: 8px;
+      font-size: 16px;
+      border: 2px solid #90caf9;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .param-input:focus {
+      outline: none;
+      border-color: #1976d2;
+    }
+    #status {
+      margin: 15px 0;
+      padding: 15px;
+      background: #e3f2fd;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #1976d2;
+    }
+    .q-table {
+      margin-top: 20px;
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .q-table th, .q-table td {
+      border: 1px solid #e0e0e0;
+      padding: 8px;
+      text-align: center;
+    }
+    .q-table th {
+      background: #f5f5f5;
+      font-weight: 600;
+    }
+    .q-table td.best-action {
+      background: #e8f5e9;
+      font-weight: bold;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin: 20px 0;
+    }
+    .metric-card {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .metric-value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1976d2;
+      margin: 5px 0;
+    }
+    .metric-label {
+      font-size: 14px;
+      color: #666;
+    }
+    #learning-chart {
+      width: 100%;
+      height: 300px;
+      margin: 20px 0;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>8-Puzzle: Mô phỏng Q-Learning</h2>
+    
+    <div class="controls">
+      <div class="input-group">
+        <label for="alpha">Alpha (α):</label>
+        <input type="number" id="alpha" class="param-input" value="0.1" min="0" max="1" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="gamma">Gamma (γ):</label>
+        <input type="number" id="gamma" class="param-input" value="0.9" min="0" max="1" step="0.1">
+      </div>
+      <div class="input-group">
+        <label for="epsilon">Epsilon (ε):</label>
+        <input type="number" id="epsilon" class="param-input" value="0.1" min="0" max="1" step="0.1">
+      </div>
+      <button id="startBtn" class="btn" onclick="startLearning()">Bắt đầu học</button>
+      <button id="stepBtn" class="btn" onclick="step()" disabled>Bước tiếp theo</button>
+      <button id="autoBtn" class="btn" onclick="toggleAuto()" disabled>Tự động</button>
+      <button id="optimalBtn" class="btn" onclick="showOptimalPath()" disabled>Đường đi tối ưu</button>
+      <button id="resetBtn" class="btn" onclick="reset()">Reset</button>
+    </div>
+
+    <div id="status">Nhập các tham số và nhấn "Bắt đầu học" để bắt đầu.</div>
+
+    <div style="display: flex; gap: 30px;">
+      <div>
+        <h3>Trạng thái hiện tại</h3>
+        <div id="current-state" class="puzzle"></div>
+      </div>
+      <div>
+        <h3>Trạng thái đích</h3>
+        <div id="goal-state" class="puzzle"></div>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-label">Số bước thực hiện</div>
+        <div id="steps" class="metric-value">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Số episode</div>
+        <div id="episodes" class="metric-value">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Reward tích lũy</div>
+        <div id="total-reward" class="metric-value">0</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-label">Reward trung bình</div>
+        <div id="avg-reward" class="metric-value">0</div>
+      </div>
+    </div>
+
+    <div id="learning-chart"></div>
+
+    <h3>Q-Table (Top 10 states)</h3>
+    <div style="overflow-x: auto;">
+      <table class="q-table" id="q-table">
+        <thead>
+          <tr>
+            <th>State</th>
+            <th>UP</th>
+            <th>DOWN</th>
+            <th>LEFT</th>
+            <th>RIGHT</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    // Khởi tạo các biến toàn cục
+    let startState = [1,2,3,4,5,6,0,7,8];
+    let goalState = [1,2,3,4,5,6,7,8,0];
+    let currentState = [...startState];
+    let qTable = new Map();
+    let episodes = 0;
+    let steps = 0;
+    let totalReward = 0;
+    let episodeRewards = [];
+    let isLearning = false;
+    let autoInterval = null;
+    let isAuto = false;
+    let isShowingOptimal = false;
+
+    // Các hành động có thể
+    const actions = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+
+    // Hàm tiện ích
+    function stateToString(state) {
+      return state.join(',');
+    }
+
+    function deepCopy(state) {
+      return [...state];
+    }
+
+    function getManhattanDistance(state) {
+      let distance = 0;
+      for (let i = 0; i < 9; i++) {
+        if (state[i] === 0) continue;
+        let currentRow = Math.floor(i / 3);
+        let currentCol = i % 3;
+        let goalIndex = goalState.indexOf(state[i]);
+        let goalRow = Math.floor(goalIndex / 3);
+        let goalCol = goalIndex % 3;
+        distance += Math.abs(currentRow - goalRow) + Math.abs(currentCol - goalCol);
+      }
+      return distance;
+    }
+
+    function getReward(state, nextState) {
+      let currentDistance = getManhattanDistance(state);
+      let nextDistance = getManhattanDistance(nextState);
+      
+      if (isGoalState(nextState)) return 100;
+      if (nextDistance < currentDistance) return 10;
+      if (nextDistance > currentDistance) return -10;
+      return -1;
+    }
+
+    function isGoalState(state) {
+      return state.every((val, idx) => val === goalState[idx]);
+    }
+
+    function getValidActions(state) {
+      const blankIndex = state.indexOf(0);
+      const row = Math.floor(blankIndex / 3);
+      const col = blankIndex % 3;
+      let valid = [];
+      
+      if (row > 0) valid.push('UP');
+      if (row < 2) valid.push('DOWN');
+      if (col > 0) valid.push('LEFT');
+      if (col < 2) valid.push('RIGHT');
+      
+      return valid;
+    }
+
+    function getNextState(state, action) {
+      const blankIndex = state.indexOf(0);
+      let nextState = deepCopy(state);
+      let newBlankIndex;
+
+      switch(action) {
+        case 'UP':
+          newBlankIndex = blankIndex - 3;
+          break;
+        case 'DOWN':
+          newBlankIndex = blankIndex + 3;
+          break;
+        case 'LEFT':
+          newBlankIndex = blankIndex - 1;
+          break;
+        case 'RIGHT':
+          newBlankIndex = blankIndex + 1;
+          break;
+      }
+
+      if (newBlankIndex >= 0 && newBlankIndex < 9) {
+        [nextState[blankIndex], nextState[newBlankIndex]] = 
+        [nextState[newBlankIndex], nextState[blankIndex]];
+      }
+
+      return nextState;
+    }
+
+    function getQValue(state, action) {
+      const stateKey = stateToString(state);
+      if (!qTable.has(stateKey)) {
+        qTable.set(stateKey, {});
+        actions.forEach(a => qTable.get(stateKey)[a] = 0);
+      }
+      return qTable.get(stateKey)[action];
+    }
+
+    function setQValue(state, action, value) {
+      const stateKey = stateToString(state);
+      if (!qTable.has(stateKey)) {
+        qTable.set(stateKey, {});
+        actions.forEach(a => qTable.get(stateKey)[a] = 0);
+      }
+      qTable.get(stateKey)[action] = value;
+    }
+
+    function chooseAction(state, epsilon) {
+      if (Math.random() < epsilon) {
+        // Exploration: chọn ngẫu nhiên từ các hành động hợp lệ
+        const validActions = getValidActions(state);
+        return validActions[Math.floor(Math.random() * validActions.length)];
+      } else {
+        // Exploitation: chọn hành động có Q-value cao nhất
+        const validActions = getValidActions(state);
+        let bestAction = validActions[0];
+        let maxQ = getQValue(state, bestAction);
+
+        for (let action of validActions) {
+          let q = getQValue(state, action);
+          if (q > maxQ) {
+            maxQ = q;
+            bestAction = action;
+          }
+        }
+        return bestAction;
+      }
+    }
+
+    function updateQValue(state, action, nextState, reward, alpha, gamma) {
+      const currentQ = getQValue(state, action);
+      const validNextActions = getValidActions(nextState);
+      const maxNextQ = Math.max(...validNextActions.map(a => getQValue(nextState, a)));
+      const newQ = currentQ + alpha * (reward + gamma * maxNextQ - currentQ);
+      setQValue(state, action, newQ);
+      console.log('Update Q:', stateToString(state), action, 'old:', currentQ, 'new:', newQ, 'reward:', reward, 'maxNextQ:', maxNextQ);
+    }
+
+    function updateMetrics() {
+      document.getElementById('steps').textContent = steps;
+      document.getElementById('episodes').textContent = episodes;
+      document.getElementById('total-reward').textContent = totalReward;
+      document.getElementById('avg-reward').textContent = 
+        (totalReward / (episodes || 1)).toFixed(2);
+    }
+
+    function updateQTable() {
+      const tbody = document.querySelector('#q-table tbody');
+      tbody.innerHTML = '';
+
+      // Sắp xếp tất cả state theo tổng Q-value giảm dần, không cắt bớt
+      const sortedStates = Array.from(qTable.entries())
+        .sort((a, b) => {
+          const sumA = Object.values(a[1]).reduce((sum, q) => sum + q, 0);
+          const sumB = Object.values(b[1]).reduce((sum, q) => sum + q, 0);
+          return sumB - sumA;
+        });
+
+      for (let [state, actionValues] of sortedStates) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${state}</td>
+          ${actions.map(action => {
+            let raw = actionValues[action];
+            let value = (typeof raw === 'number' && !isNaN(raw)) ? raw.toFixed(2) : '0.00';
+            let maxQ = Math.max(...Object.values(actionValues).map(v => (typeof v === 'number' && !isNaN(v)) ? v : 0));
+            let isBest = (parseFloat(value) === maxQ && maxQ !== 0);
+            return `<td class="${isBest ? 'best-action' : ''}">${value}</td>`;
+          }).join('')}
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function drawPuzzle(container, state) {
+      container.innerHTML = '';
+      state.forEach((val, idx) => {
+        const div = document.createElement('div');
+        div.className = 'tile' + (val === 0 ? ' blank' : '');
+        div.textContent = val === 0 ? '' : val;
+        container.appendChild(div);
+      });
+    }
+
+    function step() {
+      if (!isLearning || isShowingOptimal) return;
+
+      const alpha = parseFloat(document.getElementById('alpha').value);
+      const gamma = parseFloat(document.getElementById('gamma').value);
+      const epsilon = parseFloat(document.getElementById('epsilon').value);
+
+      // Thực hiện một bước Q-learning
+      const action = chooseAction(currentState, epsilon);
+      const nextState = getNextState(currentState, action);
+      const reward = getReward(currentState, nextState);
+
+      // Cập nhật Q-table
+      updateQValue(currentState, action, nextState, reward, alpha, gamma);
+
+      // Cập nhật metrics
+      totalReward += reward;
+      steps++;
+
+      // Cập nhật trạng thái
+      currentState = nextState;
+      drawPuzzle(document.getElementById('current-state'), currentState);
+
+      // Kiểm tra kết thúc episode
+      if (isGoalState(currentState) || steps > 100) {
+        episodes++;
+        episodeRewards.push(totalReward);
+        currentState = [...startState];
+        steps = 0;
+        document.getElementById('status').textContent = 
+          `Episode ${episodes} hoàn thành. Tổng reward: ${totalReward}`;
+      } else {
+        document.getElementById('status').textContent = 
+          `Bước ${steps}: Thực hiện ${action}, Reward: ${reward}`;
+      }
+
+      // Cập nhật giao diện
+      updateMetrics();
+      updateQTable();
+    }
+
+    function toggleAuto() {
+      if (isAuto) {
+        clearInterval(autoInterval);
+        isAuto = false;
+        document.getElementById('autoBtn').textContent = 'Tự động';
+        document.getElementById('optimalBtn').disabled = false;
+      } else {
+        isAuto = true;
+        document.getElementById('autoBtn').textContent = 'Dừng';
+        document.getElementById('optimalBtn').disabled = true;
+        autoInterval = setInterval(() => {
+          if (!isLearning || isShowingOptimal) {
+            clearInterval(autoInterval);
+            isAuto = false;
+            document.getElementById('autoBtn').textContent = 'Tự động';
+            document.getElementById('optimalBtn').disabled = false;
+            return;
+          }
+          step();
+        }, 10);
+      }
+    }
+
+    function showOptimalPath() {
+      if (isAuto || !isLearning) return;
+      isShowingOptimal = true;
+      document.getElementById('optimalBtn').disabled = true;
+      document.getElementById('autoBtn').disabled = true;
+      document.getElementById('stepBtn').disabled = true;
+      document.getElementById('status').textContent = 'Đang hiển thị đường đi tối ưu...';
+      let path = [];
+      let state = [...currentState];
+      let visited = new Set();
+      let maxStep = 50;
+      function nextOptimalStep(stepCount) {
+        drawPuzzle(document.getElementById('current-state'), state);
+        path.push(stateToString(state));
+        if (isGoalState(state) || stepCount > maxStep || visited.has(stateToString(state))) {
+          isShowingOptimal = false;
+          document.getElementById('optimalBtn').disabled = false;
+          document.getElementById('autoBtn').disabled = false;
+          document.getElementById('stepBtn').disabled = false;
+          document.getElementById('status').textContent = isGoalState(state) ?
+            `Đã đến đích sau ${stepCount} bước!` :
+            'Không tìm được đường đi tối ưu (có thể chưa học đủ hoặc bị lặp).';
+          return;
+        }
+        visited.add(stateToString(state));
+        // Chọn action có Q-value cao nhất
+        const validActions = getValidActions(state);
+        let bestAction = validActions[0];
+        let maxQ = getQValue(state, bestAction);
+        for (let action of validActions) {
+          let q = getQValue(state, action);
+          if (q > maxQ) {
+            maxQ = q;
+            bestAction = action;
+          }
+        }
+        state = getNextState(state, bestAction);
+        setTimeout(() => nextOptimalStep(stepCount + 1), 400);
+      }
+      nextOptimalStep(0);
+    }
+
+    function startLearning() {
+      isLearning = true;
+      document.getElementById('stepBtn').disabled = false;
+      document.getElementById('autoBtn').disabled = false;
+      document.getElementById('optimalBtn').disabled = false;
+      document.getElementById('status').textContent = 'Đang học...';
+    }
+
+    function reset() {
+      isLearning = false;
+      isAuto = false;
+      isShowingOptimal = false;
+      clearInterval(autoInterval);
+      currentState = [...startState];
+      qTable.clear();
+      episodes = 0;
+      steps = 0;
+      totalReward = 0;
+      episodeRewards = [];
+      
+      document.getElementById('stepBtn').disabled = true;
+      document.getElementById('autoBtn').disabled = true;
+      document.getElementById('optimalBtn').disabled = true;
+      document.getElementById('status').textContent = 
+        'Đã reset. Nhập các tham số và nhấn "Bắt đầu học" để bắt đầu lại.';
+      
+      drawPuzzle(document.getElementById('current-state'), currentState);
+      drawPuzzle(document.getElementById('goal-state'), goalState);
+      updateMetrics();
+      updateQTable();
+    }
+
+    // Khởi tạo khi trang load
+    window.onload = function() {
+      drawPuzzle(document.getElementById('current-state'), currentState);
+      drawPuzzle(document.getElementById('goal-state'), goalState);
+      updateMetrics();
+      updateQTable();
+    };
+  </script>
+</body>
+</html> 
