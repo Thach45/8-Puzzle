@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>8-Puzzle - Belition</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f6fa; margin: 0; padding: 0;}
+        h3 { color: #2c3e50; margin-top: 24px; text-align: center;}
+        .container { max-width: 1200px; margin: 0 auto; padding: 16px;}
+        .beliefs-section { margin-top: 18px; }
+        .beliefs-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-bottom: 24px;
+            min-height: 120px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .belief-board {
+            display: grid;
+            grid-template-columns: repeat(3, 40px);
+            grid-gap: 3px;
+            margin: 0 auto;
+            border: 2.5px solid #b2bec3;
+            background: #dfe6e9;
+            border-radius: 10px;
+            box-shadow: 1px 2px 8px #b2bec3;
+            transition: all 0.3s;
+            width: 130px;
+            height: 130px;
+            position: relative;
+            padding: 5px;
+        }
+        .belief-board.matched {
+            border: 3px solid #00b894;
+            box-shadow: 0 0 12px #00b89499;
+        }
+        .cell {
+            width: 40px;
+            height: 40px;
+            text-align: center;
+            line-height: 40px;
+            font-size: 24px;
+            border-radius: 5px;
+            border: 1.5px solid #b2bec3;
+            background: #fff;
+            color: #2d3436;
+            transition: all 0.3s;
+        }
+        .cell.blank { background: #636e72; color: #636e72; }
+        .cell.observed {
+            background: #00b894;
+            color: white;
+            font-weight: bold;
+        }
+        .cell.hidden {
+            background: #636e72;
+            color: #636e72;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        .controls button {
+            padding: 10px 22px;
+            font-size: 17px;
+            border-radius: 6px;
+            border: none;
+            background: #0984e3;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 6px #b2bec3;
+        }
+        .controls button:disabled {
+            background: #b2bec3;
+            cursor: not-allowed;
+        }
+        .controls button:hover:not(:disabled) {
+            background: #00b894;
+            transform: translateY(-2px);
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .section-title {
+            font-size: 18px;
+            color: #2d3436;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .count-badge {
+            background: #0984e3;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            margin: 5px 0;
+        }
+        .status-label {
+            color: #2d3436;
+            font-weight: bold;
+        }
+        .status-value {
+            padding: 4px 12px;
+            border-radius: 4px;
+            background: #0984e3;
+            color: white;
+        }
+        .status-value.success {
+            background: #00b894;
+        }
+        .status-value.failure {
+            background: #d63031;
+        }
+        .observation {
+            background: #00b894;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .observation-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .observation-content {
+            background: rgba(255,255,255,0.2);
+            padding: 10px;
+            border-radius: 6px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .mini-board {
+            display: grid;
+            grid-template-columns: repeat(3, 35px);
+            gap: 2px;
+            background: white;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .mini-cell {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f8f9fa;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 20px;
+        }
+        .mini-cell.visible {
+            background: #00b894;
+            color: white;
+        }
+        .mini-cell.hidden {
+            background: #636e72;
+        }
+        .step-label {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0984e3;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+        }
+        .step-description {
+            font-size: 15px;
+            color: #636e72;
+            margin: 10px 0;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            line-height: 1.6;
+        }
+        #bfs-history { margin-top: 30px; }
+        .bfs-row { display: flex; align-items: flex-start; margin-bottom: 28px; }
+        .bfs-step-label { min-width: 90px; font-weight: bold; color: #636e72; margin-right: 18px; font-size: 18px; }
+        .belief-group { display: flex; flex-direction: column; align-items: center; margin-right: 24px; background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 10px 8px 8px 8px; min-width: 140px; }
+        .belief-group.goal { border: 3px solid #00b894; box-shadow: 0 0 16px #00b89455; }
+        .belief-board { display: grid; grid-template-columns: repeat(3, 32px); grid-gap: 2px; margin: 0 auto 4px auto; border: 2px solid #b2bec3; background: #dfe6e9; border-radius: 7px; width: 104px; height: 104px; position: relative; padding: 2px; }
+        .cell { width: 32px; height: 32px; text-align: center; line-height: 32px; font-size: 20px; border-radius: 4px; border: 1.2px solid #b2bec3; background: #fff; color: #2d3436; transition: all 0.3s; }
+        .cell.blank { background: #636e72; color: #636e72; }
+        .bfs-actions { font-size: 13px; color: #0984e3; margin-top: 2px; font-weight: bold; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>8-Puzzle - Belief State Search (BFS Steps Visualization)</h3>
+        <div class="controls">
+            <button onclick="step()" id="btn-step">Bước tiếp</button>
+            <button onclick="autoBFS()" id="btn-auto">Chạy tự động</button>
+            <button onclick="stopAuto()" id="btn-stop" style="display:none;background:#d63031;">Dừng</button>
+            <button onclick="reset()">Reset</button>
+        </div>
+        <div class="section">
+            <div class="status-item">
+                <span class="status-label">Số bước BFS:</span>
+                <span class="status-value" id="step-count">0</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Trạng thái:</span>
+                <span class="status-value" id="status"></span>
+            </div>
+        </div>
+        <div id="bfs-history"></div>
+    </div>
+
+    <script>
+        const GOAL = [
+            [1, 2, 3],
+            [4, 5, 6],
+            [7, 8, 0]
+        ];
+        const ACTIONS = ['up', 'down', 'left', 'right'];
+        
+        // Lưu lịch sử các bước BFS, mỗi bước là mảng các belief set
+        let bfsHistory = [];
+        let queue = [];
+        let visited = new Set();
+        let foundGoal = false;
+        let stepCount = 0;
+        let autoRunning = false;
+        let autoTimer = null;
+
+        function arraysEqual(a, b) {
+            return JSON.stringify(a) === JSON.stringify(b);
+        }
+        function stateToString(state) {
+            return state.flat().join(',');
+        }
+        function beliefSetToString(beliefSet) {
+            return [...beliefSet].map(state => stateToString(state)).sort().join('|');
+        }
+        function findBlank(state) {
+            for (let i = 0; i < 3; i++)
+                for (let j = 0; j < 3; j++)
+                    if (state[i][j] === 0) return [i, j];
+            return null;
+        }
+        function canMove(state, direction) {
+            let [i, j] = findBlank(state);
+            if (direction === 'up') return i > 0;
+            if (direction === 'down') return i < 2;
+            if (direction === 'left') return j > 0;
+            if (direction === 'right') return j < 2;
+            return false;
+        }
+        function moveState(state, direction) {
+            let newState = state.map(row => [...row]);
+            let [i, j] = findBlank(newState);
+            let ni = i, nj = j;
+            if (direction === 'up') ni--;
+            if (direction === 'down') ni++;
+            if (direction === 'left') nj--;
+            if (direction === 'right') nj++;
+            [newState[i][j], newState[ni][nj]] = [newState[ni][nj], newState[i][j]];
+            return newState;
+        }
+        function generateInitialState() {
+            let state = Array(3).fill().map(() => Array(3));
+            state[0] = [...GOAL[0]];
+            let remainingNums = [4, 5, 6, 7, 8, 0];
+            for (let i = 1; i < 3; i++) {
+                for (let j = 0; j < 3; j++) {
+                    let idx = Math.floor(Math.random() * remainingNums.length);
+                    state[i][j] = remainingNums[idx];
+                    remainingNums.splice(idx, 1);
+                }
+            }
+            return state;
+        }
+        function isGoalBeliefSet(beliefSet) {
+            if (beliefSet.size === 0) return false;
+            for (let state of beliefSet) {
+                if (!arraysEqual(state, GOAL)) return false;
+            }
+            return true;
+        }
+        function reset() {
+            stopAuto();
+            bfsHistory = [];
+            queue = [];
+            visited = new Set();
+            foundGoal = false;
+            stepCount = 0;
+            // Tạo belief state ban đầu với 5 states có hàng 1 giống goal
+            let initialBeliefSet = new Set();
+            let seen = new Set();
+            while (initialBeliefSet.size < 5) {
+                let state = generateInitialState();
+                let stateStr = stateToString(state);
+                if (!seen.has(stateStr)) {
+                    seen.add(stateStr);
+                    initialBeliefSet.add(state);
+                }
+            }
+            queue.push({
+                beliefSet: initialBeliefSet,
+                actions: []
+            });
+            visited.add(beliefSetToString(initialBeliefSet));
+            bfsHistory.push([{beliefSet: initialBeliefSet, actions: []}]);
+            updateStatus("Khởi tạo belief states với hàng 1 giống goal");
+            render();
+        }
+        function step() {
+            if (foundGoal || queue.length === 0) return;
+
+            // 1. Lấy tất cả belief set ở level hiện tại
+            let currentLevel = [];
+            let levelSize = queue.length;
+            for (let i = 0; i < levelSize; i++) {
+                currentLevel.push(queue.shift());
+            }
+
+            // 2. Thêm level hiện tại vào history
+            bfsHistory.push(currentLevel);
+            stepCount++;
+
+            // 3. Kiểm tra goal trong level hiện tại
+            for (let node of currentLevel) {
+                if (isGoalBeliefSet(node.beliefSet)) {
+                    foundGoal = true;
+                    queue = [];
+                    render();
+                    updateStatus("🎉 Đã tìm thấy goal state!");
+                    return;
+                }
+            }
+
+            // 4. Nếu chưa có goal, sinh các trạng thái mới cho level tiếp theo
+            let nextQueue = [];
+            for (let node of currentLevel) {
+                for (let action of ACTIONS) {
+                    let newBeliefSet = new Set();
+                    // Áp dụng action cho tất cả state trong belief set
+                    for (let state of node.beliefSet) {
+                        if (canMove(state, action)) {
+                            let newState = moveState(state, action);
+                            newBeliefSet.add(newState);
+                        }
+                    }
+                    // Lọc: chỉ giữ state có hàng 1 giống goal
+                    newBeliefSet = new Set(Array.from(newBeliefSet).filter(s => arraysEqual(s[0], GOAL[0])));
+                    
+                    // Thêm vào queue nếu là belief set mới
+                    if (newBeliefSet.size > 0) {
+                        let beliefSetStr = beliefSetToString(newBeliefSet);
+                        if (!visited.has(beliefSetStr)) {
+                            visited.add(beliefSetStr);
+                            nextQueue.push({
+                                beliefSet: newBeliefSet,
+                                actions: [...node.actions, action]
+                            });
+                        }
+                    }
+                }
+            }
+
+            // 5. Cập nhật queue và trạng thái
+            queue = nextQueue;
+            render();
+            
+            if (queue.length === 0) {
+                updateStatus("❌ Không tìm thấy goal state!");
+            } else {
+                updateStatus("Đã thực hiện bước BFS tiếp theo");
+            }
+        }
+        function render() {
+            document.getElementById('step-count').innerText = stepCount;
+            let historyDiv = document.getElementById('bfs-history');
+            historyDiv.innerHTML = '';
+            bfsHistory.forEach((level, idx) => {
+                let row = document.createElement('div');
+                row.className = 'bfs-row';
+                let label = document.createElement('div');
+                label.className = 'bfs-step-label';
+                label.innerText = `Bước ${idx}`;
+                row.appendChild(label);
+                level.forEach(node => {
+                    let group = document.createElement('div');
+                    group.className = 'belief-group' + (isGoalBeliefSet(node.beliefSet) ? ' goal' : '');
+                    node.beliefSet.forEach(state => {
+                        let board = document.createElement('div');
+                        board.className = 'belief-board';
+                        for (let i = 0; i < 3; i++) {
+                            for (let j = 0; j < 3; j++) {
+                                board.innerHTML += `<div class=\"cell${state[i][j] === 0 ? ' blank' : ''}\">${state[i][j] || ''}</div>`;
+                            }
+                        }
+                        group.appendChild(board);
+                    });
+                    if (node.actions.length > 0) {
+                        let act = document.createElement('div');
+                        act.className = 'bfs-actions';
+                        act.innerText = node.actions.join(' → ');
+                        group.appendChild(act);
+                    }
+                    row.appendChild(group);
+                });
+                historyDiv.appendChild(row);
+            });
+            // Disable/enable buttons
+            const btnStep = document.getElementById('btn-step');
+            const btnAuto = document.getElementById('btn-auto');
+            if (foundGoal || queue.length === 0) {
+                btnStep.disabled = true;
+                btnAuto.disabled = true;
+            } else {
+                btnStep.disabled = false;
+                btnAuto.disabled = false;
+            }
+        }
+        function updateStatus(message) {
+            let statusEl = document.getElementById('status');
+            statusEl.innerText = message;
+        }
+        function autoBFS() {
+            if (autoRunning) return;
+            autoRunning = true;
+            document.getElementById('btn-auto').style.display = 'none';
+            document.getElementById('btn-step').disabled = true;
+            document.getElementById('btn-stop').style.display = '';
+            autoStep();
+        }
+        function autoStep() {
+            if (!autoRunning) return;
+            if (foundGoal || queue.length === 0) {
+                stopAuto();
+                return;
+            }
+            step();
+            if (foundGoal || queue.length === 0) {
+                stopAuto();
+                return;
+            }
+            autoTimer = setTimeout(autoStep, 1000);
+        }
+        function stopAuto() {
+            autoRunning = false;
+            if (autoTimer) clearTimeout(autoTimer);
+            document.getElementById('btn-auto').style.display = '';
+            document.getElementById('btn-step').disabled = false;
+            document.getElementById('btn-stop').style.display = 'none';
+        }
+        reset();
+    </script>
+</body>
+</html>

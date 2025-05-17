@@ -95,8 +95,8 @@ def no_observation():
 
 @partial_observation_routes_bp.route('/partial-observation')
 def partial_observation():
-    return partial_observation_controller()
-
+    # return partial_observation_controller()
+    return render_template('partial_observation.html')
 @forward_checking_routes_bp.route('/forward-checking')
 def forward_checking():
     return forward_checking_controller()
