@@ -49,15 +49,237 @@ def state_to_string(state):
     """Convert a state to a string for visited set."""
     return ''.join(str(num) for row in state for num in row)
 
+def bfs_search(initial_state, goal_state, max_iterations=100000):
+    """Breadth-First Search implementation for the 8-puzzle problem."""
+    if initial_state == goal_state:
+        return [initial_state], 1
+    
+    initial_tuple = tuple(tuple(row) for row in initial_state)
+    goal_tuple = tuple(tuple(row) for row in goal_state)
+    
+    queue = deque([(initial_tuple, [initial_tuple])])
+    visited = {initial_tuple}
+    nodes_explored = 0
+    
+    while queue and nodes_explored < max_iterations:
+        current_state, path = queue.popleft()
+        nodes_explored += 1
+        
+        blank_i, blank_j = get_blank_position(current_state)
+        possible_moves = get_possible_moves(blank_i, blank_j)
+        
+        for move in possible_moves:
+            new_state = get_new_state(current_state, move, (blank_i, blank_j))
+            
+            if new_state not in visited:
+                if new_state == goal_tuple:
+                    return [list(map(list, state)) for state in path + [new_state]], nodes_explored
+                
+                visited.add(new_state)
+                queue.append((new_state, path + [new_state]))
+    
+    return None
+
+def dfs_search(initial_state, goal_state, max_depth=30, max_iterations=100000):
+    """Depth-First Search implementation with depth limit."""
+    initial_tuple = tuple(tuple(row) for row in initial_state)
+    goal_tuple = tuple(tuple(row) for row in goal_state)
+    
+    stack = [(initial_tuple, [initial_tuple], 0)]  # (state, path, depth)
+    visited = {initial_tuple}
+    nodes_explored = 0
+    
+    while stack and nodes_explored < max_iterations:
+        current_state, path, depth = stack.pop()
+        nodes_explored += 1
+        
+        if current_state == goal_tuple:
+            return [list(map(list, state)) for state in path], nodes_explored
+        
+        if depth < max_depth:
+            blank_i, blank_j = get_blank_position(current_state)
+            possible_moves = get_possible_moves(blank_i, blank_j)
+            
+            for move in reversed(possible_moves):
+                new_state = get_new_state(current_state, move, (blank_i, blank_j))
+                
+                if new_state not in visited:
+                    visited.add(new_state)
+                    stack.append((new_state, path + [new_state], depth + 1))
+    
+    return None
+
+def ucs_search(initial_state, goal_state, max_iterations=100000):
+    """Uniform Cost Search implementation."""
+    initial_tuple = tuple(tuple(row) for row in initial_state)
+    goal_tuple = tuple(tuple(row) for row in goal_state)
+    
+    counter = 0
+    queue = [(0, counter, initial_tuple, [initial_tuple])]
+    visited = {initial_tuple: 0}  # State -> cost
+    nodes_explored = 0
+    
+    while queue and nodes_explored < max_iterations:
+        cost, _, current_state, path = heapq.heappop(queue)
+        nodes_explored += 1
+        
+        if current_state == goal_tuple:
+            return [list(map(list, state)) for state in path], nodes_explored
+        
+        blank_i, blank_j = get_blank_position(current_state)
+        possible_moves = get_possible_moves(blank_i, blank_j)
+        
+        for move in possible_moves:
+            new_state = get_new_state(current_state, move, (blank_i, blank_j))
+            new_cost = cost + 1
+            
+            if new_state not in visited or new_cost < visited[new_state]:
+                visited[new_state] = new_cost
+                counter += 1
+                heapq.heappush(queue, (new_cost, counter, new_state, path + [new_state]))
+    
+    return None
+
+def id_dfs_search(initial_state, goal_state, max_depth=30):
+    """Iterative Deepening DFS implementation."""
+    initial_tuple = tuple(tuple(row) for row in initial_state)
+    goal_tuple = tuple(tuple(row) for row in goal_state)
+    total_nodes = 0
+    
+    for depth in range(max_depth):
+        visited = set()
+        result, nodes = depth_limited_search(initial_tuple, goal_tuple, depth, visited)
+        total_nodes += nodes
+        
+        if result is not None:
+            return [list(map(list, state)) for state in result], total_nodes
+    
+    return None
+
+def depth_limited_search(initial_state, goal_state, depth_limit, visited):
+    """Helper function for IDDFS."""
+    stack = [(initial_state, [initial_state], 0)]
+    visited.add(initial_state)
+    nodes_explored = 0
+    
+    while stack:
+        current_state, path, depth = stack.pop()
+        nodes_explored += 1
+        
+        if current_state == goal_state:
+            return path, nodes_explored
+        
+        if depth < depth_limit:
+            blank_i, blank_j = get_blank_position(current_state)
+            possible_moves = get_possible_moves(blank_i, blank_j)
+            
+            for move in reversed(possible_moves):
+                new_state = get_new_state(current_state, move, (blank_i, blank_j))
+                
+                if new_state not in visited:
+                    visited.add(new_state)
+                    stack.append((new_state, path + [new_state], depth + 1))
+    
+    return None, nodes_explored
+
+def get_bfs_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = bfs_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
+def get_dfs_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = dfs_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
+def get_ucs_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = ucs_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
+def get_iddfs_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = id_dfs_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
 def bfs_controller():
     # Initial and goal states
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4], 
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = bfs_search(initial_state, goal_state)
@@ -132,13 +354,14 @@ def bfs_search(initial_state, goal_state, max_iterations=100000):
 
 def dfs_controller():
     # Initial and goal states
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4], 
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = dfs_search(initial_state, goal_state)
@@ -213,13 +436,14 @@ def dfs_search(initial_state, goal_state, max_depth=30, max_iterations=100000):
 
 def ucs_controller():
     # Initial and goal states
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4], 
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = ucs_search(initial_state, goal_state)
@@ -296,9 +520,10 @@ def ucs_search(initial_state, goal_state, max_iterations=100000):
 
 def iddfs_controller():
     # Initial and goal states
-    initial_state = [ [1, 2, 3],
-                        [0, 4, 6],
-                        [7, 5, 8]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
                   [4, 5, 6], 
@@ -402,13 +627,14 @@ def depth_limited_search(initial_state, goal_state, depth_limit, visited):
 # Optional: Add A* search algorithm
 def astar_controller():
     # Initial and goal states
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4], 
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = astar_search(initial_state, goal_state)

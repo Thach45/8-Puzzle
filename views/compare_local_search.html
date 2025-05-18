@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>So sánh Local Search</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 2rem;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        .charts-container {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            margin-bottom: 3rem;
+            background: #f8fafc;
+            padding: 1.5rem;
+            border-radius: 10px;
+        }
+
+        .chart-container:last-child {
+            margin-bottom: 0;
+        }
+
+        .stats-table {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            background: white;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #4299e1;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f7fafc;
+        }
+
+        tr:hover {
+            background: #ebf4ff;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .algorithm-box {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .algorithm-box h3 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+
+        .algorithm-box p {
+            color: #4a5568;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .charts-container,
+            .stats-table {
+                padding: 1rem;
+            }
+
+            th, td {
+                padding: 0.75rem;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+    <style>
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            padding: 2rem;
+            margin: 2rem 0;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 15px;
+        }
+
+        .algorithm-box {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .algorithm-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(to right, #4299e1, #667eea);
+        }
+
+        .algorithm-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        .algorithm-box h2 {
+            color: #2d3748;
+            font-size: 1.5rem;
+            margin: 1rem 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .algorithm-box img {
+            width: 100%;
+            max-width: 300px;
+            height: auto;
+            border-radius: 10px;
+            margin: 1rem 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .algorithm-box img:hover {
+            transform: scale(1.05);
+        }
+
+        .algorithm-box p {
+            font-weight: 600;
+            color: #4a5568;
+            margin: 1rem 0;
+            width: 100%;
+        }
+
+        .algorithm-box ul {
+            list-style-type: none;
+            padding: 0;
+            width: 100%;
+        }
+
+        .algorithm-box ul li {
+            margin-bottom: 0.75rem;
+            padding-left: 1.5rem;
+            position: relative;
+            color: #718096;
+            line-height: 1.6;
+        }
+
+        .algorithm-box ul li:before {
+            content: "→";
+            color: #4299e1;
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .comparison-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .algorithm-box {
+                padding: 1.5rem;
+            }
+
+            .algorithm-box h2 {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>So sánh các thuật toán Local Search</h1>
+        <div class="charts-container">
+            <div class="chart-container" style="position: relative; height:400px; width:100%; margin-bottom: 40px;">
+                <canvas id="timeChart"></canvas>
+            </div>
+            <div class="chart-container" style="position: relative; height:400px; width:100%; margin-bottom: 40px;">
+                <canvas id="nodesChart"></canvas>
+            </div>
+            <div class="chart-container" style="position: relative; height:400px; width:100%; margin-bottom: 40px;">
+                <canvas id="pathChart"></canvas>
+            </div>
+        </div>
+
+        <div class="stats-table" style="margin-bottom: 40px;">
+            <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
+                <thead>
+                    <tr>
+                        <th style="padding: 12px; border: 1px solid #ddd; background-color: #f4f4f4;">Thuật toán</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; background-color: #f4f4f4;">Thời gian (giây)</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; background-color: #f4f4f4;">Số nút đã khám phá</th>
+                        <th style="padding: 12px; border: 1px solid #ddd; background-color: #f4f4f4;">Độ dài đường đi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, stats in algorithm_stats.items() %}
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #ddd;">{{ name }}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">{{ stats.execution_time }}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">{{ stats.nodes_explored }}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">{{ stats.path_length }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="comparison-grid">
+            <a href="/hill_climbing" class="algorithm-box">
+                <h2>Simple Hill Climbing</h2>
+                <img src="{{ url_for('static', filename='img/hill1.gif') }}" alt="Simple Hill Climbing Animation">
+                <p>Đặc điểm:</p>
+                <ul>
+                    <li>Luôn chọn trạng thái kế tiếp tốt hơn trạng thái hiện tại</li>
+                    <li>Dễ bị mắc kẹt ở cực đại địa phương</li>
+                    <li>Đơn giản và nhanh</li>
+                </ul>
+            </a>
+            <a href="/steepest_hill_climbing" class="algorithm-box">
+                <h2>Steepest Hill Climbing</h2>
+                <img src="{{ url_for('static', filename='img/hill2.gif') }}" alt="Steepest Hill Climbing Animation">
+                <p>Đặc điểm:</p>
+                <ul>
+                    <li>Xem xét tất cả các trạng thái kế tiếp</li>
+                    <li>Chọn trạng thái tốt nhất</li>
+                    <li>Tốn nhiều tài nguyên hơn Simple Hill Climbing</li>
+                </ul>
+            </a>
+            <a href="/stochastic_hill_climbing" class="algorithm-box">
+                <h2>Stochastic Hill Climbing</h2>
+                <img src="{{ url_for('static', filename='img/hill3.gif') }}" alt="Stochastic Hill Climbing Animation">
+                <p>Đặc điểm:</p>
+                <ul>
+                    <li>Chọn ngẫu nhiên trong số các trạng thái tốt hơn</li>
+                    <li>Có thể thoát khỏi cực đại địa phương</li>
+                    <li>Kết quả không ổn định</li>
+                </ul>
+            </a>
+            <a href="/simulated_annealing" class="algorithm-box">
+                <h2>Simulated Annealing</h2>
+                <img src="{{ url_for('static', filename='img/hill4.gif') }}" alt="Simulated Annealing Animation">
+                <p>Đặc điểm:</p>
+                <ul>
+                    <li>Cho phép di chuyển đến trạng thái xấu hơn</li>
+                    <li>Xác suất chấp nhận trạng thái xấu giảm dần theo thời gian</li>
+                    <li>Hiệu quả trong việc thoát khỏi cực đại địa phương</li>
+                </ul>
+            </a>
+            <a href="/beam" class="algorithm-box">
+                <h2>Beam Search</h2>
+                <img src="{{ url_for('static', filename='img/beam.gif') }}" alt="Beam Animation">
+                <p>Đặc điểm:</p>
+                <ul>
+                    <li>Giới hạn số lượng nút được mở rộng</li>
+                    <li>Chọn k nút tốt nhất để mở rộng tiếp</li>
+                    <li>Giảm thiểu bộ nhớ nhưng có thể bỏ qua đường đi tối ưu</li>
+                </ul>
+            </a>
+
+        </div>
+    </div>
+
+    <script>
+        const stats = JSON.parse('{{ algorithm_stats | tojson | safe }}');
+
+        // Time Chart
+        const timeCtx = document.getElementById('timeChart').getContext('2d');
+        new Chart(timeCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(stats),
+                datasets: [{
+                    label: 'Thời gian thực thi (giây)',
+                    data: Object.keys(stats).map(key => stats[key].execution_time),
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Thời gian (giây)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'So sánh thời gian thực thi',
+                        font: {size: 16}
+                    }
+                }
+            }
+        });
+
+        // Nodes Chart
+        const nodesCtx = document.getElementById('nodesChart').getContext('2d');
+        new Chart(nodesCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(stats),
+                datasets: [{
+                    label: 'Số nút đã khám phá',
+                    data: Object.keys(stats).map(key => stats[key].nodes_explored),
+                    backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Số nút'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'So sánh số nút đã khám phá',
+                        font: {size: 16}
+                    }
+                }
+            }
+        });
+
+        // Path Length Chart
+        const pathCtx = document.getElementById('pathChart').getContext('2d');
+        new Chart(pathCtx, {
+            type: 'bar',
+            data: {
+                labels: Object.keys(stats),
+                datasets: [{
+                    label: 'Độ dài đường đi',
+                    data: Object.keys(stats).map(key => stats[key].path_length),
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Số bước'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'So sánh độ dài đường đi',
+                        font: {size: 16}
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

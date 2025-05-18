@@ -1,4 +1,18 @@
-# 8-Puzzle Solver Project
+# Dự án Giải Bài Toán 8-Puzzle
+
+## Mục lục
+- [1. Mục tiêu](#1-mục-tiêu)
+- [2. Nội dung](#2-nội-dung)
+  - [2.1. Tìm kiếm không có thông tin](#21-tìm-kiếm-không-có-thông-tin)
+  - [2.2. Tìm kiếm có thông tin](#22-tìm-kiếm-có-thông-tin)
+  - [2.3. Tìm kiếm cục bộ](#23-tìm-kiếm-cục-bộ)
+  - [2.4. Tìm kiếm trong môi trường phức tạp](#24-tìm-kiếm-trong-môi-trường-phức-tạp)
+  - [2.5. Tìm kiếm trong môi trường có ràng buộc](#25-tìm-kiếm-trong-môi-trường-có-ràng-buộc)
+  - [2.6. Tìm kiếm tăng cường](#26-tìm-kiếm-tăng-cường)
+- [3. Kết luận](#3-kết-luận)
+  - [Nhận xét tổng quan về các nhóm thuật toán](#nhận-xét-tổng-quan-về-các-nhóm-thuật-toán)
+  - [Kết quả đạt được](#kết-quả-đạt-được)
+  - [Đề xuất cải tiến](#đề-xuất-cải-tiến)
 
 ## 1. Mục tiêu
 Triển khai và so sánh hiệu suất của các thuật toán tìm kiếm khác nhau trong việc giải quyết bài toán 8-puzzle, bao gồm:
@@ -11,157 +25,166 @@ Triển khai và so sánh hiệu suất của các thuật toán tìm kiếm kh�
 
 ## 2. Nội dung
 
-### 2.1 Các thuật toán Tìm kiếm không có thông tin
+### 2.1. Tìm kiếm không có thông tin (Uninformed Search)
+**Đặc điểm:** Không sử dụng thông tin heuristic, chỉ dựa vào cấu trúc không gian trạng thái.
 
-#### Thành phần chính của bài toán:
-- **Trạng thái**: Ma trận 3x3 thể hiện vị trí các số từ 0-8 (0 đại diện cho ô trống)
-- **Trạng thái ban đầu**: Cấu hình ban đầu của puzzle
-- **Trạng thái đích**: Cấu hình đích cần đạt được
-- **Phép di chuyển hợp lệ**: Di chuyển ô trống lên, xuống, trái, phải (nếu có thể)
+**Các thuật toán:**
+- **Breadth-First Search (BFS):** Tìm kiếm theo chiều rộng, đảm bảo tìm được đường đi ngắn nhất nhưng tốn nhiều bộ nhớ.
+- **Depth-First Search (DFS):** Tìm kiếm theo chiều sâu, tiết kiệm bộ nhớ nhưng không đảm bảo tối ưu.
+- **Uniform Cost Search (UCS):** Mở rộng theo chi phí đường đi, đảm bảo tối ưu nếu chi phí các bước khác nhau.
+- **Iterative Deepening DFS (IDDFS):** Kết hợp DFS và BFS, tăng dần giới hạn độ sâu.
 
-#### Mô phỏng thuật toán:
-```
-[Hình GIF minh họa quá trình giải của BFS]
-Mô tả: Thuật toán BFS tìm kiếm theo chiều rộng, khám phá tất cả các trạng thái ở cùng độ sâu trước khi đi sâu hơn.
+**Mô phỏng:**
+- *Quá trình giải của thuật toán BFS*
+![BFS Algorithm](static/img/bfs.gif)
+- *Quá trình giải của thuật toán DFS*
+![DFS Algorithm](static/img/dfs.gif)
+- *Quá trình giải của thuật toán UCS*
+![UCS Algorithm](static/img/ucs.gif)
+- *Quá trình giải của thuật toán IDDFS*
+![IDDFS Algorithm](static/img/iddfs.gif)
 
-[Hình GIF minh họa quá trình giải của DFS]
-Mô tả: Thuật toán DFS đi sâu theo một nhánh cho đến khi không thể đi tiếp hoặc tìm thấy đích.
+**So sánh:**
+- Thời gian thực thi:
+  ![Uninformed Time](static/img/so%20sánh-uninfor-thời%20gian.png)
+- Số nút đã khám phá:
+  ![Uninformed Nodes](static/img/so%20sánh%20-Uninformed-số%20nút.png)
+- Độ dài đường đi:
+  ![Uninformed Path](static/img/so%20sánh-Uninformed-đường%20đi.png)
+- Bảng so sánh tóm tắt:
+  ![Bảng tóm tắt](static/img/bảng%20so%20sánh%20Uninformed.png)
 
-[Hình GIF minh họa quá trình giải của UCS]
-Mô tả: UCS mở rộng theo chi phí đường đi, đảm bảo tìm được đường đi tối ưu.
+**Nhận xét:**
+- BFS tối ưu nhưng tốn bộ nhớ
+- DFS tiết kiệm bộ nhớ nhưng không tối ưu
+- UCS tối ưu với chi phí khác nhau
+- IDDFS cân bằng giữa tối ưu và bộ nhớ
 
-[Hình GIF minh họa quá trình giải của IDDFS]
-Mô tả: IDDFS kết hợp chiến lược của DFS với giới hạn độ sâu tăng dần.
-```
+### 2.2. Tìm kiếm có thông tin (Informed Search)
+**Đặc điểm:** Sử dụng heuristic để hướng dẫn tìm kiếm, tăng hiệu quả.
 
-#### So sánh hiệu suất:
-```
-[Biểu đồ so sánh thời gian thực thi]
-[Biểu đồ so sánh bộ nhớ sử dụng]
-[Biểu đồ so sánh số trạng thái đã duyệt]
-```
+**Các thuật toán:**
+- **Greedy Best-First Search:** Luôn chọn trạng thái có heuristic tốt nhất, nhanh nhưng không tối ưu.
+- **A* Search:** Kết hợp chi phí thực tế và heuristic, đảm bảo tối ưu nếu heuristic chấp nhận được.
+- **IDA* Search:** Tìm kiếm theo độ sâu với giới hạn dựa trên f-value, tiết kiệm bộ nhớ.
 
-#### Nhận xét:
-- BFS có ưu điểm là luôn tìm được đường đi ngắn nhất, nhưng nhược điểm là tốn nhiều bộ nhớ
-- DFS ít tốn bộ nhớ hơn nhưng không đảm bảo tìm được đường đi ngắn nhất
-- UCS phù hợp khi chi phí các bước di chuyển khác nhau
-- IDDFS là sự lựa chọn tốt khi cần cân bằng giữa tối ưu và bộ nhớ
+**Mô phỏng:**
+- *Quá trình giải của Greedy Best-First Search*
+![Greedy Algorithm](static/img/greedy.gif)
+- *Quá trình giải của A* Search*
+![A* Algorithm](static/img/a*.gif)
+- *Quá trình giải của IDA* Search*
+![IDA* Algorithm](static/img/ida*.gif)
 
-### 2.2 Các thuật toán Tìm kiếm có thông tin
+**So sánh:**
+- Thời gian thực thi:
+  ![Informed Time](static/img/so%20sánh-informed-thời%20gian.png)
+- Số nút đã khám phá:
+  ![Informed Nodes](static/img/so%20sánh-informed-số%20nút.png)
+- Độ dài đường đi:
+  ![Informed Path](static/img/so%20sánh%20-informed-đường%20đi.png)
+- Bảng so sánh tóm tắt:
+  ![Bảng tóm tắt](static/img/bảng%20so%20sánh%20informed.png)
 
-#### Mô phỏng thuật toán:
-```
-[Hình GIF minh họa Greedy Best-First Search]
-Mô tả: Thuật toán luôn chọn trạng thái có heuristic tốt nhất.
+**Nhận xét:**
+- Greedy nhanh
+- A* cân bằng
+- IDA* tiết kiệm bộ nhớ
 
-[Hình GIF minh họa A* Search]
-Mô tả: A* kết hợp chi phí thực tế và heuristic để tìm đường đi tối ưu.
+### 2.3. Tìm kiếm cục bộ (Local Search)
+**Đặc điểm:** Không quan tâm đến đường đi, chỉ quan tâm trạng thái hiện tại và lân cận.
 
-[Hình GIF minh họa IDA* Search]
-Mô tả: IDA* thực hiện tìm kiếm theo độ sâu với giới hạn dựa trên f-value.
+**Các thuật toán:**
+- **Simple Hill Climbing:** Luôn chọn trạng thái lân cận tốt hơn, dễ mắc kẹt cực trị địa phương.
+- **Steepest Hill Climbing:** Đánh giá tất cả các lân cận và chọn trạng thái tốt nhất.
+- **Simulated Annealing:** Cho phép chọn trạng thái kém hơn với xác suất giảm dần, giúp thoát cực trị địa phương.
+- **Stochastic Hill Climbing:** Kết hợp khám phá và khai thác.
+- **Beam Search:** Giới hạn số trạng thái xét ở mỗi bước, phù hợp cho giải pháp gần đúng nhanh.
 
-[Hình GIF minh họa Beam Search]
-Mô tả: Beam Search giới hạn số lượng trạng thái xét ở mỗi bước.
-```
+**Mô phỏng:**
+- *Quá trình giải của Hill Climbing*
+![Hill Climbing](static/img/hill1.gif)
+- *Quá trình giải của Steepest Hill Climbing*
+![Steepest Hill Climbing](static/img/hill2.gif)
+- *Quá trình giải của Simulated Annealing*
+![Simulated Annealing](static/img/hill4.gif)
+- *Quá trình giải của Stochastic Hill Climbing*
+![Stochastic Hill Climbing](static/img/hill3.gif)
+- *Quá trình giải của Beam Search*
+![Beam Algorithm](static/img/beam.gif)
 
-#### So sánh hiệu suất:
-```
-[Biểu đồ so sánh các thuật toán informed search]
-[Biểu đồ đánh giá chất lượng lời giải]
-```
+**So sánh:**
+- Thời gian thực thi:
+  ![Local Time](static/img/so%20sánh-local%20search-thời%20gian.png)
+- Số nút đã khám phá:
+  ![Local Nodes](static/img/so%20sánh-local%20search-số%20nút.png)
+- Độ dài đường đi:
+  ![Local Path](static/img/so%20sánh-local%20search-đường%20đi.png)
+- Bảng so sánh tóm tắt:
+  ![Bảng tóm tắt](static/img/bảng%20so%20sánh%20local%20search.png)
 
-#### Nhận xét:
-- Greedy Best-First Search nhanh nhưng không đảm bảo tối ưu
-- A* cân bằng tốt giữa tốc độ và chất lượng lời giải
-- IDA* hiệu quả về mặt bộ nhớ cho không gian trạng thái lớn
-- Beam Search là lựa chọn tốt khi cần giải pháp nhanh và chấp nhận được gần đúng
+**Nhận xét:**
+- Hill Climbing nhanh nhưng dễ kẹt
+- Simulated Annealing hiệu quả hơn
+- Local Search phù hợp cho bài toán tối ưu hóa
 
-### 2.3 Các thuật toán tìm kiếm cục bộ
+### 2.4. Tìm kiếm trong môi trường phức tạp (Search in Complex Environments)
+**Đặc điểm:** Không gian trạng thái không hoàn toàn quan sát được hoặc có nhiều ràng buộc.
 
-#### Mô phỏng thuật toán:
-```
-[Hình GIF minh họa Hill Climbing]
-[Hình GIF minh họa Simulated Annealing]
-```
+**Các thuật toán:**
+- **No Observation Search:** Agent không biết trạng thái hiện tại, duy trì belief state (tập trạng thái có thể).
+- **Partial Observation Search:** Agent chỉ biết một phần trạng thái, belief state được cập nhật dựa trên quan sát và hành động.
+- **AND-OR Search:** Xử lý các trường hợp không gian trạng thái phân nhánh phức tạp.
 
-#### So sánh hiệu suất:
-```
-[Biểu đồ so sánh tốc độ hội tụ]
-[Biểu đồ khả năng thoát cực trị địa phương]
-```
+**Mô phỏng:**
+- *Quá trình giải của AND-OR Search*
+![AND-OR Search](static/img/and-or.gif)
+- *Quá trình giải của No Observation Search*
+![No Observation](static/img/noobservation.gif)
+- *Quá trình giải của Partial Observation Search*
+![Partial Observation](static/img/partial.gif)
 
-#### Nhận xét:
-- Hill Climbing đơn giản và nhanh nhưng dễ bị mắc kẹt
-- Simulated Annealing hiệu quả trong việc tránh cực trị địa phương
-- Stochastic Hill Climbing cân bằng giữa khám phá và khai thác
-- Local search thích hợp khi không cần đường đi tối ưu
+**Nhận xét:**
+- No Observation phù hợp môi trường không biết trước
+- Partial Observation cân bằng giữa thu thập thông tin và tối ưu hóa
+- AND-OR Search hiệu quả cho bài toán nhiều nhánh quyết định
 
-### 2.4 Các thuật toán tìm kiếm trong môi trường phức tạp
+### 2.5. Tìm kiếm trong môi trường có ràng buộc (Constraint Satisfaction Search)
+**Đặc điểm:** Không gian trạng thái bị ràng buộc bởi các điều kiện.
 
-#### Tìm kiếm không quan sát (No Observation Search):
-- Thực hiện tìm kiếm khi không có thông tin về trạng thái hiện tại
-- Sử dụng belief state để theo dõi tập các trạng thái có thể
-- Cập nhật belief state dựa trên các hành động đã thực hiện
+**Các thuật toán:**
+- **Forward Checking:** Kiểm tra sớm để giảm không gian tìm kiếm.
+- **AC-3:** Duy trì tính nhất quán cục bộ giữa các biến.
+- **Backtracking:** Quay lui khi gặp mâu thuẫn.
 
-```
-[Hình GIF minh họa No Observation Search]
-Mô tả: Thuật toán hoạt động trong điều kiện không có thông tin về trạng thái
-```
+**Mô phỏng:**
+- *Quá trình giải của Forward Checking*
+![Forward Checking](static/img/fc.gif)
+- *Quá trình giải của AC-3*
+![AC-3](static/img/ac-3.gif)
+- *Quá trình giải của Backtracking*
+![Backtracking](static/img/backtracking.gif)
 
-#### Tìm kiếm quan sát một phần (Partial Observation Search):
-- Kết hợp thông tin quan sát được với belief state
-- Cập nhật belief state dựa trên cả hành động và quan sát
-- Sử dụng chiến lược information gathering khi cần thiết
+**Nhận xét:**
+- Forward Checking và AC-3 hiệu quả cho CSP
+- Backtracking đơn giản nhưng có thể chậm
 
-```
-[Hình GIF minh họa Partial Observation Search]
-Mô tả: Thuật toán sử dụng thông tin quan sát một phần để cải thiện quá trình tìm kiếm
-```
+### 2.6. Tìm kiếm tăng cường (Reinforcement Learning Search)
+**Đặc điểm:** Agent học từ tương tác với môi trường, tối ưu hóa dần qua trải nghiệm.
 
-#### AND-OR Search:
-- Xử lý các trường hợp không gian trạng thái phức tạp
-- Phân tích cả thành công và thất bại của các nhánh
+**Các thuật toán:**
+- **Q-Learning:** Học giá trị hành động-trạng thái qua trải nghiệm.
 
-#### Nhận xét:
-- No Observation Search phù hợp với môi trường hoàn toàn không biết trước
-- Partial Observation Search cân bằng giữa thu thập thông tin và tối ưu hóa
-- AND-OR Search hiệu quả cho các bài toán có nhiều nhánh quyết định
+**Mô phỏng:**
+- *Quá trình học tập của Q-Learning*
+![Q-Learning](static/img/qlearning.gif)
 
-### 2.5 Các thuật toán tìm kiếm trong môi trường có ràng buộc
-
-#### Mô phỏng thuật toán:
-```
-[Hình GIF minh họa Forward Checking]
-[Hình GIF minh họa AC-3]
-[Hình GIF minh họa Backtracking]
-```
-
-#### So sánh hiệu suất:
-```
-[Biểu đồ so sánh tốc độ giải quyết ràng buộc]
-```
-
-#### Nhận xét:
-- Forward Checking giảm không gian tìm kiếm bằng cách kiểm tra sớm
-- AC-3 hiệu quả trong việc duy trì tính nhất quán cục bộ
-- Backtracking đơn giản nhưng có thể chậm với bài toán phức tạp
-
-### 2.6 Các thuật toán tìm kiếm tăng cường
-
-#### Mô phỏng Q-Learning:
-```
-[Hình GIF minh họa quá trình học Q-Learning]
-[Biểu đồ hội tụ của Q-values]
-```
-
-#### Nhận xét:
-- Q-Learning hiệu quả trong việc học từ trải nghiệm
-- Cần thời gian để hội tụ nhưng cho kết quả tốt
-- Phù hợp cho các bài toán có không gian trạng thái lớn
+**Nhận xét:**
+- Q-Learning hiệu quả cho không gian trạng thái lớn, cần thời gian huấn luyện
 
 ## 3. Kết luận
 
-### Nhận xét tổng quan về các nhóm thuật toán:
+### Nhận xét tổng quan về các nhóm thuật toán
 
 1. **Tìm kiếm không có thông tin**:
    - Phù hợp khi không có thông tin heuristic
@@ -193,13 +216,13 @@ Mô tả: Thuật toán sử dụng thông tin quan sát một phần để cả
    - Hiệu quả cho bài toán dài hạn
    - Cần thời gian huấn luyện
 
-### Kết quả đạt được:
+### Kết quả đạt được
 1. Triển khai thành công 6 nhóm thuật toán tìm kiếm
 2. Xây dựng hệ thống mô phỏng trực quan
 3. Phân tích hiệu suất chi tiết
 4. Đề xuất các trường hợp sử dụng phù hợp
 
-### Đề xuất cải tiến:
+### Đề xuất cải tiến
 1. Tối ưu hóa hiệu suất các thuật toán
 2. Thêm các heuristic khác để so sánh
 3. Mở rộng cho bài toán N-puzzle

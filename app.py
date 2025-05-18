@@ -6,7 +6,8 @@ from routes.home_routes import (
     simulated_annealing_routes_bp, stochastic_hill_climbing_routes_bp,
     and_or_routes_bp, no_observation_routes_bp, partial_observation_routes_bp,
     forward_checking_routes_bp, backtracking_routes_bp, ac_3_routes_bp,
-    q_learning_routes_bp
+    q_learning_routes_bp, compare_uninformed_routes_bp, compare_informed_routes_bp,
+    compare_local_search_routes_bp
 )
 
 app = Flask(__name__, template_folder='views')
@@ -42,5 +43,10 @@ app.register_blueprint(ac_3_routes_bp)
 
 # Reinforcement Learning
 app.register_blueprint(q_learning_routes_bp)
+
+# Compare Routes
+app.register_blueprint(compare_uninformed_routes_bp)
+app.register_blueprint(compare_informed_routes_bp)
+app.register_blueprint(compare_local_search_routes_bp)
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=3000, debug=True)

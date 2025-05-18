@@ -54,15 +54,104 @@ def manhattan_distance(state, goal_state):
     
     return distance
 
+def get_simple_hill_climbing_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = simple_hill_climbing_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
+def get_steepest_hill_climbing_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = steepest_hill_climbing_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
+def get_stochastic_hill_climbing_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = stochastic_hill_climbing_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
+def get_simulated_annealing_stats():
+    initial_state = [[1, 2, 3], [5, 0, 6], [4, 7, 8]]
+    goal_state = [[1, 2, 3], [4, 5, 6], [7, 8, 0]]
+    
+    start_time = time.time()
+    result = simulated_annealing_search(initial_state, goal_state)
+    end_time = time.time()
+    
+    if result is None:
+        return {
+            'execution_time': 0,
+            'nodes_explored': 0,
+            'path_length': 0
+        }
+        
+    path, nodes_explored = result
+    return {
+        'execution_time': round(end_time - start_time, 4),
+        'nodes_explored': nodes_explored,
+        'path_length': len(path)
+    }
+
 def simple_hill_climbing_controller():
     """Controller for Simple Hill Climbing Search."""
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4],
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = simple_hill_climbing_search(initial_state, goal_state)
@@ -124,13 +213,14 @@ def simple_hill_climbing_search(initial_state, goal_state, max_iterations=100):
 
 def steepest_hill_climbing_controller():
     """Controller for Steepest-Ascent Hill Climbing Search."""
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4],
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = steepest_hill_climbing_search(initial_state, goal_state)
@@ -194,13 +284,14 @@ def steepest_hill_climbing_search(initial_state, goal_state, max_iterations=100)
 
 def stochastic_hill_climbing_controller():
     """Controller for Stochastic Hill Climbing Search."""
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4],
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = stochastic_hill_climbing_search(initial_state, goal_state)
@@ -263,13 +354,14 @@ def stochastic_hill_climbing_search(initial_state, goal_state, max_iterations=10
 
 def simulated_annealing_controller():
     """Controller for Simulated Annealing Search."""
-    initial_state = [[2, 8, 3],
-                    [1, 6, 4],
-                    [7, 0, 5]]
+    initial_state = [[1, 2, 3],
+ [5, 0, 6],
+ [4, 7, 8]
+]
     
     goal_state = [[1, 2, 3],
-                  [8, 0, 4],
-                  [7, 6, 5]]
+                  [4, 5, 6], 
+                  [7, 8, 0]]
     
     start_time = time.time()
     result = simulated_annealing_search(initial_state, goal_state)

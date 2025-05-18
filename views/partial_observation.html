@@ -67,6 +67,15 @@
             justify-content: center;
             margin: 20px 0;
         }
+        .time-display {
+            background: #00b894;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-size: 16px;
+        }
         .controls button {
             padding: 10px 22px;
             font-size: 17px;
@@ -220,6 +229,7 @@
             <button onclick="stopAuto()" id="btn-stop" style="display:none;background:#d63031;">Dừng</button>
             <button onclick="reset()">Reset</button>
         </div>
+        <div class="time-display" id="execution-time">Thời gian thực thi: 0.00s</div>
         <div class="section">
             <div class="status-item">
                 <span class="status-label">Số bước BFS:</span>
@@ -249,6 +259,7 @@
         let stepCount = 0;
         let autoRunning = false;
         let autoTimer = null;
+        let startTime = Date.now();
 
         function arraysEqual(a, b) {
             return JSON.stringify(a) === JSON.stringify(b);
@@ -311,6 +322,7 @@
             visited = new Set();
             foundGoal = false;
             stepCount = 0;
+            startTime = Date.now();
             // Tạo belief state ban đầu với 5 states có hàng 1 giống goal
             let initialBeliefSet = new Set();
             let seen = new Set();
@@ -333,6 +345,8 @@
         }
         function step() {
             if (foundGoal || queue.length === 0) return;
+
+            const stepStartTime = performance.now();
 
             // 1. Lấy tất cả belief set ở level hiện tại
             let currentLevel = [];
@@ -387,6 +401,11 @@
 
             // 5. Cập nhật queue và trạng thái
             queue = nextQueue;
+            
+            const stepEndTime = performance.now();
+            const executionTime = ((stepEndTime - stepStartTime)).toFixed(2);
+            document.getElementById('execution-time').innerText = `Thời gian thực thi thuật toán: ${executionTime}ms`;
+            
             render();
             
             if (queue.length === 0) {
@@ -397,6 +416,8 @@
         }
         function render() {
             document.getElementById('step-count').innerText = stepCount;
+            const executionTime = ((Date.now() - startTime) / 1000).toFixed(2);
+            document.getElementById('execution-time').innerText = `Thời gian thực thi: ${executionTime}s`;
             let historyDiv = document.getElementById('bfs-history');
             historyDiv.innerHTML = '';
             bfsHistory.forEach((level, idx) => {

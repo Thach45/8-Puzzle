@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template
 from controllers.uninformed_controller import home_controller,bfs_controller, dfs_controller, ucs_controller, iddfs_controller
 from controllers.andor_search_controller import andor_controller
+from controllers.compare_controller import compare_uninformed_controller, compare_informed_controller, compare_local_search_controller
 from controllers.no_observation_controller import no_observation_controller
 from controllers.partial_observation_controller import partial_observation_controller
 from controllers.informed_controller import greedy_controller, a_star_controller, ida_star_controller, beam_search_controller
@@ -27,6 +28,9 @@ partial_observation_routes_bp = Blueprint('partial_observation_routes', __name__
 forward_checking_routes_bp = Blueprint('forward_checking_routes', __name__)
 ac_3_routes_bp = Blueprint('ac_3_routes', __name__)
 q_learning_routes_bp = Blueprint('q_learning_routes', __name__)
+compare_uninformed_routes_bp = Blueprint('compare_uninformed_routes', __name__)
+compare_informed_routes_bp = Blueprint('compare_informed_routes', __name__)
+compare_local_search_routes_bp = Blueprint('compare_local_search_routes', __name__)
 
 @home_routes_bp.route('/')
 def home():
@@ -109,3 +113,15 @@ def ac_3():
 @q_learning_routes_bp.route('/q-learning')
 def q_learning():
     return render_template('q-learning.html')
+
+@compare_uninformed_routes_bp.route('/compare/uninformed')
+def compare_uninformed():
+    return compare_uninformed_controller()
+
+@compare_informed_routes_bp.route('/compare/informed')
+def compare_informed():
+    return compare_informed_controller()
+
+@compare_local_search_routes_bp.route('/compare/local-search')
+def compare_local_search():
+    return compare_local_search_controller()
