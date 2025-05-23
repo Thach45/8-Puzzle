@@ -1,4 +1,4 @@
-# Dồ án cá nhân Giải Bài Toán 8-Puzzle
+# Đồ án cá nhân Giải Bài Toán 8-Puzzle
 
 ## Mục lục
 - [1. Mục tiêu](#1-mục-tiêu)
